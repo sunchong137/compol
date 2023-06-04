@@ -17,14 +17,14 @@ for i in range(norb):
     h1e[i, (i-1)%norb] = -1.
     eri[i,i,i,i] = U
 
-
 mf = scf.UHF(mol)
 mf.get_hcore = lambda *args: h1e 
 mf.get_ovlp = lambda *args: np.eye(norb)
 mf._eri = ao2mo.restore(8, eri, norb)
 mol.incore_anyway = True
+mo_coeff = mf.mo_coeff
+mf.kernel()
 
-
-cisolver = fci.direct_spin1()
+cisolver = fci.FCI(mf)
 ci_energy = cisolver.kernel()[0]
 print(ci_energy)
