@@ -48,6 +48,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     if ao_ovlp is None:
         if ndim == 2:
             ovlp = np.linalg.det(np.dot(sdet1.T.conj(), sdet2))
+            ovlp = ovlp * ovlp
         elif ndim == 3:
             ovlp1 = np.linalg.det(np.dot(sdet1[0].T.conj(), sdet2[0]))
             ovlp2 = np.linalg.det(np.dot(sdet1[1].T.conj(), sdet2[1]))
@@ -55,6 +56,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     else:
         if ndim == 2:
             ovlp = np.linalg.det(np.dot(np.dot(sdet1.T.conj(), ao_ovlp), sdet2))
+            ovlp = ovlp * ovlp
         elif ndim == 3:
             ovlp1 = np.linalg.det(np.dot(np.dot(sdet1[0].T.conj(), ao_ovlp), sdet2[0]))
             ovlp2 = np.linalg.det(np.dot(np.dot(sdet1[1].T.conj(), ao_ovlp), sdet2[1]))
