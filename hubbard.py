@@ -39,13 +39,26 @@ def hubbard_mf(norb, U, spin=0, nelec=None, pbc=True):
         mf = scf.RHF(mol)
     elif spin == 1:
         mf = scf.UHF(mol)
+    else:
+        raise ValueError("Spin has to be 0 or 1!")
+
 
     
     mf.get_hcore = lambda *args: h1e 
     mf.get_ovlp = lambda *args: np.eye(norb)
     mf._eri = ao2mo.restore(8, eri, norb)
     mol.incore_anyway = True
+
+    
+    if spin == 1:
+        # because there is degeneracy in the orbitals, different init_guess will give different mo_coeffs
+        # but the energy is the same.
+        init_guess = mf.get_init_guess()
+        np.fill_diagonal(init_guess[0], 1)  # Jujube typed this: ';/'
+        np.fill_diagonal(init_guess[1], 0)
+        mf.init_guess = init_guess
     # mo_coeff = mf.mo_coeff
+
     mf.kernel()
     #e_hf = mf.energy_elec
     return mf
