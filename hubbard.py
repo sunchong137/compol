@@ -4,7 +4,7 @@ Hubbard model.
 import numpy as np
 from pyscf import gto, scf, ao2mo, fci
 
-def hubbard_mf(norb, U, spin=0, pbc=True):
+def hubbard_mf(norb, U, spin=0, nelec=None, pbc=True):
     '''
     Mean-field of Hubbard model.
     Args:
@@ -19,20 +19,28 @@ def hubbard_mf(norb, U, spin=0, pbc=True):
     '''
     # Norb need to be 4n + 2, otherwise there is degeneracy between HOMO and LUMO
     mol = gto.M()
-    mol.nelectron = norb # Half-filling
+    if nelec is None:
+        mol.nelectron = norb
 
     h1e = np.zeros((norb, norb))
     eri = np.zeros((norb,)*4)
+
     for i in range(norb-1):
         h1e[i, (i+1)] = -1.
-        h1e[(i-1), i] = -1.
+        h1e[(i+1), i] = -1.
         eri[i,i,i,i] = U
+    eri[-1,-1,-1,-1] = U
     if pbc:
         assert norb%4 == 2, "PBC requires Norb = 4n+2!"
         h1e[0, -1] = -1.
         h1e[-1, 0] = -1.
 
-    mf = scf.UHF(mol)
+    if spin == 0:
+        mf = scf.RHF(mol)
+    elif spin == 1:
+        mf = scf.UHF(mol)
+
+    
     mf.get_hcore = lambda *args: h1e 
     mf.get_ovlp = lambda *args: np.eye(norb)
     mf._eri = ao2mo.restore(8, eri, norb)
@@ -44,5 +52,6 @@ def hubbard_mf(norb, U, spin=0, pbc=True):
 
 def hubbard_fci(mf):
     cisolver = fci.FCI(mf)
-    ci_energy = cisolver.kernel()[0]
-    print(ci_energy)
+    ci_energy, ci = cisolver.kernel()
+    
+    return ci_energy, ci
