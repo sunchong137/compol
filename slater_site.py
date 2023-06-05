@@ -65,6 +65,8 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
 def det_z_det(L, sdet, x0=0.0):
     '''
     Evaluate <det | Z | det> / <det | det>
+    Returns:
+        A complex number
     '''
     sdet2 = z_sdet(L, sdet, x0=x0)
     Z = ovlp_det(sdet, sdet2) / ovlp_det(sdet, sdet)
