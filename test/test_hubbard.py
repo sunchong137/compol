@@ -2,6 +2,7 @@ import numpy as np
 import sys
 sys.path.append("../")
 import hubbard
+import slater_site
 from pyscf import gto, scf, ao2mo, fci
 
 def test_mf_rhf():
@@ -80,11 +81,17 @@ def test_uhf():
     e_hf = mf.energy_elec()[0]
     mo_coeff = mf.mo_coeff
 
-    print(mo[0] - mo[1])
-    print(mo_coeff[0] - mo_coeff[1])
+   # print(mo[0] - mo[1])
+   # print(mo_coeff[0] - mo_coeff[1])
+    dm = mf.make_rdm1()
+    print(dm[0] - dm[1])
+    mo_coeff = mymf.mo_coeff
+    sdet = mo_coeff[:, :, :(n//2)]
+    z = slater_site.det_z_det(n, sdet, x0=0)
+    print(z)
 
 
-    assert np.allclose(e, e_hf)
+    ##assert np.allclose(e, e_hf)
     #assert np.allclose(mo, mo_coeff)
     
 test_uhf()

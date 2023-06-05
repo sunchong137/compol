@@ -5,28 +5,31 @@ import numpy as np
 import hubbard
 import slater_site 
 
-norb = 10
-U = 8
-spin = 0 
-nelec = norb # half-filling
-nocc = nelec // 2
-x0 = 0.0
+# norb = 10
+# U = 8
+# spin = 0 
+# nelec = norb # half-filling
+# nocc = nelec // 2
+# x0 = norb / 2.
 
-mf = hubbard.hubbard_mf(norb, U, spin=spin, nelec=nelec, pbc=True)
-mo_coeff = mf.mo_coeff
-sdet = mo_coeff[:, :nocc]
-z = slater_site.det_z_det(norb, sdet, x0=x0)
-print(z)
+# mf = hubbard.hubbard_mf(norb, U, spin=spin, nelec=nelec, pbc=True)
+# mo_coeff = mf.mo_coeff
+# sdet = mo_coeff[:, :nocc]
+# z = slater_site.det_z_det(norb, sdet, x0=x0)
+# print(z)
 
 norb = 10
-U = 8
+U = 4
 spin = 1 
 nelec = norb # half-filling
 nocc = nelec // 2
-x0 = 0.0
+x0 = 0
 
-mf = hubbard.hubbard_mf(norb, U, spin=spin, nelec=nelec, pbc=True)
-mo_coeff = mf.mo_coeff
+mymf = hubbard.hubbard_mf(norb, U, spin=spin, nelec=nelec, pbc=True)
+rdm1 = mymf.make_rdm1()
+#print(rdm1[0] - rdm1[1])
+mo_coeff = mymf.mo_coeff
+print(mo_coeff[0] - mo_coeff[1])
 sdet = mo_coeff[:, :, :nocc]
 z = slater_site.det_z_det(norb, sdet, x0=x0)
 print(z)
