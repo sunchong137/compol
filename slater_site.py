@@ -41,7 +41,10 @@ def z_sdet(L, mo_coeff, x0=0.0):
     returns:
         numpy array of size (spin, L, Nocc), the new Slater determinant.
     '''
-    ndim = mo_coeff.ndim
+    try:
+        ndim = mo_coeff.ndim
+    except: # list or tuple
+        ndim = 3
     pos = np.arange(L) + x0 
     Z = np.exp(2.j * Pi * pos / L)
     Z = np.diag(Z)
@@ -64,7 +67,11 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     Returns:
         a complex number: overlap between two determinants.
     '''
-    ndim = sdet1.ndim
+    try:
+        ndim = sdet1.ndim
+    except: # list or tuple
+        ndim = 3
+        
     if ao_ovlp is None:
         if ndim == 2:
             ovlp = np.linalg.det(np.dot(sdet1.T.conj(), sdet2))

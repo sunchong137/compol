@@ -4,6 +4,21 @@ Hubbard model.
 import numpy as np
 from pyscf import gto, scf, ao2mo, fci
 
+def hamilt_hubbard(norb, U, pbc=True):
+    h1e = np.zeros((norb, norb))
+    eri = np.zeros((norb,)*4)
+
+    for i in range(norb-1):
+        h1e[i, (i+1)] = -1.
+        h1e[(i+1), i] = -1.
+        eri[i,i,i,i] = U
+    eri[-1,-1,-1,-1] = U
+    if pbc:
+        assert norb%4 == 2, "PBC requires Norb = 4n+2!"
+        h1e[0, -1] = -1.
+        h1e[-1, 0] = -1.
+    return h1e, eri
+
 def hubbard_mf(norb, U, spin=0, nelec=None, pbc=True):
     '''
     Mean-field of Hubbard model.
