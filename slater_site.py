@@ -7,6 +7,26 @@ import numpy as np
 
 Pi = np.pi
 
+def gen_det(mo_coeff, occ):
+    '''
+    Given the occupations (occ), generate the Slater determinant from the MO coefficients.
+    '''
+    occ = np.asarray(occ)
+    try:
+        ndim = mo_coeff.ndim
+    except:
+        ndim = 3
+    if ndim > 2: # UHF
+        idx_up = np.nonzero(occ[0])[0]
+        idx_dn = np.nonzero(occ[1])[0]
+        det_up = np.copy(mo_coeff[0][:, idx_up])
+        det_dn = np.copy(mo_coeff[1][:, idx_dn])
+        dets = [det_up, det_dn] # not array because shapes of up and dn can be diff
+    else: # RHF
+        idx = np.nonzero(occ)[0]
+        dets = np.copy(mo_coeff[:, idx])#.reshape(norb, nocc)
+    return dets
+
 def z_sdet(L, mo_coeff, x0=0.0):
     '''
     Applies complex polarzation Z onto a Slater determinant represented

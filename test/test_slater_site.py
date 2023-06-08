@@ -30,5 +30,33 @@ def test_get_z():
     Z = slater_site.det_z_det(L, mo1)
     print(Z)
 
+def test_gen_det():
+    mo_coeff = np.random.rand(3,3)
+    occ = np.array([1,0,1])
+    det = slater_site.gen_det(mo_coeff, occ)
+    ref = np.zeros((3,2))
+    ref[:, 0] = mo_coeff[:, 0]
+    ref[:, 1] = mo_coeff[:, 2]
+    assert np.allclose(det, ref)
 
-test_get_z()
+    # UHF
+    mo_up = np.random.rand(3,3)
+    mo_dn = np.random.rand(3,3)
+
+    occ_up = np.array([1,0,1])
+    occ_dn = np.array([0,1,0])
+
+    ref_u = np.zeros((3,2))
+    ref_u[:, 0] = mo_up[:, 0]
+    ref_u[:, 1] = mo_up[:, 2]
+
+    ref_d = np.zeros((3, 1))
+    ref_d[:, 0] = mo_dn[:, 1]
+    
+    ref = [ref_u, ref_d]
+    det = slater_site.gen_det([mo_up, mo_dn], [occ_up, occ_dn])
+    assert np.allclose(ref[0], det[0])
+    assert np.allclose(ref[1], det[1])
+
+test_gen_det()
+
