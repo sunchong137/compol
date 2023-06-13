@@ -2,6 +2,8 @@
 Evaluate the complex polarization for Hubbard model.
 '''
 import numpy as np 
+import sys
+sys.path.append("../")
 import hubbard
 import slater_site 
 

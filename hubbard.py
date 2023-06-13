@@ -2,6 +2,7 @@
 Hubbard model.
 '''
 import numpy as np
+import helpers
 from pyscf import gto, scf, ao2mo, fci
 
 def hamilt_hubbard(norb, U, pbc=True):
@@ -68,11 +69,7 @@ def hubbard_mf(norb, U, spin=0, nelec=None, pbc=True):
         # because there is degeneracy in the orbitals, different init_guess will give different mo_coeffs
         # but the energy is the same.
         init_guess = mf.get_init_guess()
-        for i in range(norb//2):
-            init_guess[0][i*2+1, i*2+1] = 1
-            init_guess[1][i*2+1, i*2+1] = 0
-            init_guess[0][i*2, i*2] = 0
-            init_guess[1][i*2, i*2] = 1
+        init_guess = helpers.make_init_guess(init_guess)
         mf.init_guess = init_guess
 
     mf.kernel()
