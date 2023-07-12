@@ -93,8 +93,7 @@ def test_uhf():
 
     ##assert np.allclose(e, e_hf)
     #assert np.allclose(mo, mo_coeff)
-    
-test_uhf()
+
 def test_fci():
     norb = 6
     U = 4
