@@ -14,6 +14,7 @@ def hamilt_hubbard(norb, U, pbc=True):
         h1e[(i+1), i] = -1.
         eri[i,i,i,i] = U
     eri[-1,-1,-1,-1] = U
+
     if pbc:
         assert norb%4 == 2, "PBC requires Norb = 4n+2!"
         h1e[0, -1] = -1.
@@ -66,13 +67,9 @@ def hubbard_mf(norb, U, spin=0, nelec=None, pbc=True):
     mol.incore_anyway = True
 
     if spin == 1:
-        # because there is degeneracy in the orbitals, different init_guess will give different mo_coeffs
-        # but the energy is the same.
-        init_guess = mf.get_init_guess()
-        init_guess = helpers.make_init_guess(init_guess)
-        mf.init_guess = init_guess
-
-    mf.kernel()
+        helpers.run_stab_mf(mf)
+    else:
+        mf.kernel()
     return mf
 
 def hubbard_fci(mf):

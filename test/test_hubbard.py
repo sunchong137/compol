@@ -1,9 +1,11 @@
 import numpy as np
 import sys
 sys.path.append("../")
-import hubbard
+import hubbard, helpers
 import slater_site
 from pyscf import gto, scf, ao2mo, fci
+
+
 
 def test_mf_rhf():
     norb = 6
@@ -70,25 +72,19 @@ def test_uhf():
     # ._eri only supports the two-electron integrals in 4-fold or 8-fold symmetry.
     mf._eri = ao2mo.restore(8, eri, n)
 
-    # break symmetry
-    init_guess = mf.get_init_guess()
-    np.fill_diagonal(init_guess[0], 1)
-    np.fill_diagonal(init_guess[1], 0)
-
-    mf.init_guess = init_guess
-    mf.kernel()
-
+    helpers.run_stab_mf(mf)
     e_hf = mf.energy_elec()[0]
     mo_coeff = mf.mo_coeff
 
+    assert np.allclose(e, e_hf)
    # print(mo[0] - mo[1])
    # print(mo_coeff[0] - mo_coeff[1])
-    dm = mf.make_rdm1()
-    print(dm[0] - dm[1])
-    mo_coeff = mymf.mo_coeff
-    sdet = mo_coeff[:, :, :(n//2)]
-    z = slater_site.det_z_det(n, sdet, x0=0)
-    print(z)
+    # dm = mf.make_rdm1()
+    # print(dm[0] - dm[1])
+    # mo_coeff = mymf.mo_coeff
+    # sdet = mo_coeff[:, :, :(n//2)]
+    # z = slater_site.det_z_det(n, sdet, x0=0)
+    # print(z)
 
 
     ##assert np.allclose(e, e_hf)
@@ -97,10 +93,10 @@ def test_uhf():
 def test_fci():
     norb = 6
     U = 4
-    spin = 0
+    spin = 1
     mymf = hubbard.hubbard_mf(norb, U, spin=spin)
     e_fci, ci = hubbard.hubbard_fci(mymf)
-    
+    print(e_fci)
     # compare to pyscf 
     n = 6
     h1 = np.zeros((n,n))
@@ -114,3 +110,5 @@ def test_fci():
     e, c = myci.kernel(h1, eri, n, n)
     # c and ci are not the same because they are based on different 
     assert np.allclose(e, e_fci)
+
+test_fci()
