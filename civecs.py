@@ -6,6 +6,13 @@ from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import cistring 
 import slater_site
 
+def compl_fci_site():
+    '''
+    In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
+    < phi_i |Z| phi_i>, and the others are non-zero.
+    '''
+    pass
+
 def compol_fci(ci, norb, nelec, x0=.0):
     '''
     Compute complex polarization given a ci vector. 
@@ -44,6 +51,14 @@ def compol_fci(ci, norb, nelec, x0=.0):
     
     Z = np.dot(ci_vec, new_vec)
     return Z
+
+def gen_cistr_pyscf():
+    '''
+    Generate all determinants with pyscf functions.
+    cistrings.gen_strings
+    cistrings.gen_linkstr_index
+    '''
+    pass
 
 
 def gen_cistr(norb, nelec):
