@@ -5,7 +5,7 @@ import numpy as np
 import sys
 sys.path.append("../")
 import hubbard
-import slater_site 
+import slater_site, helpers 
 from pyscf import ao2mo, fci
 
 norb = 10
@@ -22,6 +22,7 @@ mymf = hubbard.hubbard_mf(norb, U, spin=spin, nelec=nelec, pbc=True)
 rdm1 = mymf.make_rdm1()
 mo_coeff = mymf.mo_coeff
 
+# TODO replace the following with helpers function.
 # rotate h1e 
 h1e, eri = hubbard.hamilt_hubbard(norb, U, pbc=True)
 h1_a = mo_coeff[0].T.conj()@h1e@mo_coeff[0]

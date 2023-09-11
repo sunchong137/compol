@@ -91,14 +91,14 @@ def test_uhf():
     #assert np.allclose(mo, mo_coeff)
 
 def test_fci():
-    norb = 6
+    bethe = -0.573729
+    norb = 10
     U = 4
-    spin = 1
+    spin = 0
     mymf = hubbard.hubbard_mf(norb, U, spin=spin)
     e_fci, ci = hubbard.hubbard_fci(mymf)
-    print(e_fci)
     # compare to pyscf 
-    n = 6
+    n = norb
     h1 = np.zeros((n,n))
     for i in range(n-1):
         h1[i,i+1] = h1[i+1,i] = -1.0
@@ -109,6 +109,8 @@ def test_fci():
     myci = fci.direct_spin0
     e, c = myci.kernel(h1, eri, n, n)
     # c and ci are not the same because they are based on different 
+    e_per_site = e / n
     assert np.allclose(e, e_fci)
+    assert abs(e_per_site - bethe) < 1e-1
 
 test_fci()

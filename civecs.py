@@ -92,8 +92,6 @@ def compol_ci_all(ci, norb, nelec, mo_coeff, x0=0.0):
         x0 : float, the origin.
     Returns:
         A complex number, the complex polarization.
-
-    TODO: not correct, didn't consider the signs of the configurations. 
     '''
     len_ci = ci.shape[-1]
     # \hat{Z} MO
