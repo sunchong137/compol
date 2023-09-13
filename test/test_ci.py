@@ -4,6 +4,7 @@ sys.path.append("../")
 import civecs, hubbard
 from pyscf import fci
 from scipy.special import comb
+import time 
 
 
 def test_compol_fci():
@@ -18,7 +19,7 @@ def test_compol_fci():
         eri[i,i,i,i] = U
     myci = fci.direct_spin1
     e, c = myci.kernel(h1, eri, n, n)
-    z = civecs.compol_fci(c, n, n, x0=-n/2)
+    z = civecs.compol_fci_prod(c, n, n, x0=-n/2)
     print(z)
     
     # compare to UHF
@@ -26,7 +27,10 @@ def test_compol_fci():
 def test_gen_strs():
     norb = 4
     nelec = 2
+    t1 = time.time()
     cistrs = civecs.gen_cistr(norb, nelec)
+    t2 = time.time()
+    print(t2-t1)
     ref = np.array([
         [1,1,0,0],
         [1,0,1,0],
@@ -35,8 +39,9 @@ def test_gen_strs():
         [0,1,0,1],
         [0,0,1,1]
     ])
-    print(cistrs)
+    # print(cistrs)
     assert np.allclose(cistrs, ref)
+test_gen_strs()
 
 def test_z_ci():
 

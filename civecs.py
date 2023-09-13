@@ -4,62 +4,8 @@ Evaluate the complex polarization given a FCI solution.
 import numpy as np
 from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import cistring 
+from pyscf.lib import numpy_helper
 import slater_site
-
-def compl_fci_site():
-    '''
-    In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
-    < phi_i |Z| phi_i>, and the others are non-zero.
-    '''
-    pass
-
-def compol_fci(ci, norb, nelec, x0=.0):
-    '''
-    Compute complex polarization given a ci vector. 
-    ...math:
-    Z = exp(i 2pi/L X) = \prod (I + (exp(i 2pi/L a) - 1)N_a)
-    where a is the coordinate of the orbital, and N_a is the number operator on a.
-
-    Args:
-        ci: 1d array, the coefficients of the fci ground state.
-        norb: int, number of orbitals.
-        nelec: int or tuple, number of electrons
-    Kwargs:
-        x0: float, origin
-    Returns:
-        complex number.
-    '''
-    ci_vec = ci + 0.j*ci # change dtype
-    ci_vec = ci_vec.flatten()
-    new_vec = np.copy(ci_vec)
-    f0 = np.zeros((norb, norb), dtype=np.complex128)
-
-    # spin up
-    for site in range(norb):
-        f1e = np.zeros((norb, norb), dtype=np.complex128)
-        f1e[site, site] = np.exp(2.j * np.pi * (site+x0) / norb) - 1
-        f1e_all = np.array([f1e, f0])
-        delt = fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
-        new_vec = np.copy(new_vec + delt)
-        print(np.linalg.norm(delt))
-
-        f1e_all = np.array([f0, f1e])
-        new_vec = new_vec + fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
-
-        #print(site, np.linalg.norm(new_vec))
-
-    
-    Z = np.dot(ci_vec, new_vec)
-    return Z
-
-def gen_cistr_pyscf():
-    '''
-    Generate all determinants with pyscf functions.
-    cistrings.gen_strings
-    cistrings.gen_linkstr_index
-    '''
-    pass
-
 
 def gen_cistr(norb, nelec):
     '''
@@ -82,13 +28,72 @@ def gen_cistr(norb, nelec):
     cistrs = cistring.make_strings(orb_list, nelec)
     bin_strs = []
     for s in cistrs:
-        # orbital starts from the right to the left.
-        bin_form = bin(s)[2:].zfill(norb) 
-        bin_form = np.array(list(bin_form), dtype=int)[::-1]
+        bin_form = numpy_helper.base_repr_int(s, 2, norb)[::-1]
+        # # orbital starts from the right to the left.
         bin_strs.append(bin_form)
     bin_strs = np.array(bin_strs)
-    
     return bin_strs
+
+
+def compl_fci_site(norb, civec):
+    '''
+    In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
+    < phi_i |Z| phi_i>, and the others are non-zero.
+    Args:
+        norb: number of orbitals
+        civec: FCI coefficients
+    '''
+    pass
+    
+
+def compol_fci_prod(ci, norb, nelec, x0=.0):
+    '''
+    Compute complex polarization given a ci vector using the following formula:
+    ...math:
+    Z = exp(i 2pi/L X) = \prod (I + (exp(i 2pi/L a) - 1)N_a)
+    where a is the coordinate of the orbital, and N_a is the number operator on a.
+
+    Args:
+        ci: 1d array, the coefficients of the fci ground state.
+        norb: int, number of orbitals.
+        nelec: int or tuple, number of electrons
+    Kwargs:
+        x0: float, origin
+    Returns:
+        complex number.
+    NOTE: the result is off...
+    '''
+    ci_vec = ci + 0.j*ci # change dtype
+    ci_vec = ci_vec.flatten()
+    new_vec = np.copy(ci_vec)
+    f0 = np.zeros((norb, norb), dtype=np.complex128)
+
+    # spin up
+    for site in range(norb):
+        f1e = np.zeros((norb, norb), dtype=np.complex128)
+        f1e[site, site] = np.exp(2.j * np.pi * (site+x0) / norb) - 1
+        f1e_all = np.array([f1e, f0])
+        delt = fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
+        new_vec = np.copy(new_vec + delt)
+        print(np.linalg.norm(delt))
+
+        f1e_all = np.array([f0, f1e])
+        new_vec = new_vec + fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
+
+        #print(site, np.linalg.norm(new_vec))
+
+    Z = np.dot(ci_vec, new_vec)
+    return Z
+
+def gen_cistr_pyscf():
+    '''
+    Generate all determinants with pyscf functions.
+    cistrings.gen_strings
+    cistrings.gen_linkstr_index
+    '''
+    pass
+
+
 
 
 def compol_ci_all(ci, norb, nelec, mo_coeff, x0=0.0):
