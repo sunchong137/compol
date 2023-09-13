@@ -66,6 +66,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
         ao_ovlp: overlap matrix of AO orbitals, always identity for site basis.
     Returns:
         a complex number: overlap between two determinants.
+    TODO change np.dot to @
     '''
     try:
         ndim = sdet1.ndim

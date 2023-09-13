@@ -41,7 +41,7 @@ def test_gen_strs():
     ])
     # print(cistrs)
     assert np.allclose(cistrs, ref)
-test_gen_strs()
+# test_gen_strs()
 
 def test_z_ci():
 
@@ -53,7 +53,7 @@ def test_z_ci():
     _, mo = np.linalg.eigh(H)
     ci = np.random.rand(len_ci, len_ci)
     ci /= np.linalg.norm(ci)
-    z = civecs.compol_ci_all(ci, norb, nelec, mo)
+    z = civecs.compol_ci_full(ci, norb, nelec, mo)
     assert np.abs(z) <= 1
     
     # UHF 
@@ -67,5 +67,22 @@ def test_z_ci():
     ci /= np.linalg.norm(ci)
     ci = np.zeros((len_ci, len_ci))
     ci[0,0] = 1
-    z = civecs.compol_ci_all(ci, norb, nelec, mo)
+    z = civecs.compol_ci_full(ci, norb, nelec, mo)
     assert np.allclose(np.abs(z), 0)
+
+
+def test_compol_fci_site():
+    #RHF 
+    norb = 6
+    nelec = 4
+    len_ci = int(comb(norb, nelec))
+    H, _ = hubbard.hamilt_hubbard(norb, U=0) 
+    _, mo = np.linalg.eigh(H)
+    ci = np.random.rand(len_ci, len_ci)
+    ci /= np.linalg.norm(ci)
+    ci_strs = civecs.gen_cistr(norb, nelec//2)
+    z = civecs.compol_fci_site(norb, ci, ci_strs, x0=0.0)
+    print(z)
+    # assert np.abs(z) <= 1
+
+test_compol_fci_site()

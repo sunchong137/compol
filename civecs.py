@@ -1,11 +1,14 @@
 '''
 Evaluate the complex polarization given a FCI solution.
+With FCI, one should always use RHF since UHF and RHF give the same answer.
 '''
 import numpy as np
 from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
 import slater_site
+
+Pi = np.pi
 
 def gen_cistr(norb, nelec):
     '''
@@ -35,15 +38,46 @@ def gen_cistr(norb, nelec):
     return bin_strs
 
 
-def compl_fci_site(norb, civec):
+def compol_fci_site(L, ci, ci_strs, x0=0.0):
     '''
+    Only for RHF.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
     < phi_i |Z| phi_i>, and the others are non-zero.
+    Caution: if the "HF" solution is too far away from the true solution,
+             then FCI might not converge.
     Args:
-        norb: number of orbitals
+        L: number of orbitals
         civec: FCI coefficients
+    Returns
+        float
     '''
-    pass
+    # define complex polarization
+    pos = np.arange(L) + x0 
+    Z = np.exp(2.j * Pi * pos / L)
+    Z = np.diag(Z)
+
+    # define site basis orbitals. 
+    lmo = np.eye(L)
+    rmo = np.dot(Z, lmo)
+
+    # choose the MOs
+    Z = 0
+    k = 0
+    len_u, len_d = ci.shape
+    for u in range(len_u):
+        for d in range(len_d):
+            s_u = ci_strs[u]
+            s_d = ci_strs[d]
+            lu = slater_site.gen_det(lmo, s_u)
+            ru = slater_site.gen_det(rmo, s_u)
+            ld = slater_site.gen_det(lmo, s_d)
+            rd = slater_site.gen_det(rmo, s_d)
+            z_u = slater_site.ovlp_det(lu, ru)
+            z_d = slater_site.ovlp_det(ld, rd)
+            Z += z_u * z_d * (ci[u, d])**2
+
+    return np.linalg.norm(Z)
+
     
 
 def compol_fci_prod(ci, norb, nelec, x0=.0):
@@ -85,18 +119,8 @@ def compol_fci_prod(ci, norb, nelec, x0=.0):
     Z = np.dot(ci_vec, new_vec)
     return Z
 
-def gen_cistr_pyscf():
-    '''
-    Generate all determinants with pyscf functions.
-    cistrings.gen_strings
-    cistrings.gen_linkstr_index
-    '''
-    pass
 
-
-
-
-def compol_ci_all(ci, norb, nelec, mo_coeff, x0=0.0):
+def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
     '''
     Evaluate the complex polarization with respect
     to a CI vector. 
