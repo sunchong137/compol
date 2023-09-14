@@ -61,8 +61,7 @@ def compol_fci_site(L, ci, ci_strs, x0=0.0):
     rmo = np.dot(Z, lmo)
 
     # choose the MOs
-    Z = 0
-    k = 0
+    Z = 0.j
     len_u, len_d = ci.shape
     for u in range(len_u):
         for d in range(len_d):
@@ -74,11 +73,10 @@ def compol_fci_site(L, ci, ci_strs, x0=0.0):
             rd = slater_site.gen_det(rmo, s_d)
             z_u = slater_site.ovlp_det(lu, ru)
             z_d = slater_site.ovlp_det(ld, rd)
-            Z += z_u * z_d * (ci[u, d])**2
+            Z += z_u * z_d * ci[u, d]*ci[u, d].conj()
 
     return np.linalg.norm(Z)
 
-    
 
 def compol_fci_prod(ci, norb, nelec, x0=.0):
     '''
@@ -156,6 +154,7 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
     z_val = 0.j
 
     if ndim == 2: # RHF
+        # TODO wrong
         neleca = ne[0]
         assert np.allclose(neleca*2, ne[0] + ne[1])
 
@@ -187,4 +186,4 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
                         coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
                         z_val += slater_site.ovlp_det(bra, ket) * coeff 
                                                   
-    return z_val
+    return np.linalg.norm(z_val)

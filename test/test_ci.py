@@ -77,12 +77,15 @@ def test_compol_fci_site():
     nelec = 4
     len_ci = int(comb(norb, nelec))
     H, _ = hubbard.hamilt_hubbard(norb, U=0) 
-    _, mo = np.linalg.eigh(H)
+    # _, mo = np.linalg.eigh(H) 
+    mo = np.eye(norb)
     ci = np.random.rand(len_ci, len_ci)
     ci /= np.linalg.norm(ci)
     ci_strs = civecs.gen_cistr(norb, nelec//2)
     z = civecs.compol_fci_site(norb, ci, ci_strs, x0=0.0)
+    z2 = civecs.compol_ci_full(ci, norb, nelec, [mo, mo])
     print(z)
+    print(z2)
     # assert np.abs(z) <= 1
 
 test_compol_fci_site()
