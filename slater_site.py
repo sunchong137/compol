@@ -7,6 +7,15 @@ import numpy as np
 
 Pi = np.pi
 
+def gen_zmat_site(L, x0):
+    '''
+    Generate the Z operator in the site basis for MO coeffs.
+    '''
+    pos = np.arange(L) + x0 
+    Z = np.exp(2.j * Pi * pos / L)
+    Z = np.diag(Z)
+    return Z
+
 def gen_det(mo_coeff, occ):
     '''
     Given the occupations (occ), generate the Slater determinant from the MO coefficients.
@@ -45,9 +54,8 @@ def z_sdet(L, mo_coeff, x0=0.0):
         ndim = mo_coeff.ndim
     except: # list or tuple
         ndim = 3
-    pos = np.arange(L) + x0 
-    Z = np.exp(2.j * Pi * pos / L)
-    Z = np.diag(Z)
+
+    Z = gen_zmat_site(L, x0)
     if ndim == 2: # RHF
         mo_new = np.dot(Z, mo_coeff)
     elif ndim == 3:
@@ -76,7 +84,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     if ao_ovlp is None:
         if ndim == 2:
             ovlp = np.linalg.det(np.dot(sdet1.T.conj(), sdet2))
-            ovlp = ovlp * ovlp
+            ovlp = ovlp ** 2
         elif ndim == 3:
             ovlp1 = np.linalg.det(np.dot(sdet1[0].T.conj(), sdet2[0]))
             ovlp2 = np.linalg.det(np.dot(sdet1[1].T.conj(), sdet2[1]))

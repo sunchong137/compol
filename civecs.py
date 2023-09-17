@@ -38,7 +38,7 @@ def gen_cistr(norb, nelec):
     return bin_strs
 
 
-def compol_fci_site(L, ci, ci_strs, x0=0.0):
+def compol_fci_site(L, ci, nelec, x0=0.0):
     '''
     Only for RHF.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
@@ -52,28 +52,40 @@ def compol_fci_site(L, ci, ci_strs, x0=0.0):
         float
     '''
     # define complex polarization
-    pos = np.arange(L) + x0 
-    Z = np.exp(2.j * Pi * pos / L)
-    Z = np.diag(Z)
+    Z = slater_site.gen_zmat_site(L, x0)
 
     # define site basis orbitals. 
-    lmo = np.eye(L)
-    rmo = np.dot(Z, lmo)
+    bra_mo = np.eye(L)
+    ket_mo = np.dot(Z, bra_mo)
+
+    bra_mo = np.array([bra_mo, bra_mo])
+    ket_mo = np.array([ket_mo, ket_mo])
+
+    try:
+        neleca = nelec[0] # nelec as tuple
+        ne = nelec
+    except:
+        neleca = nelec // 2
+        nelecb = nelec - neleca
+        ne = [neleca, nelecb]
+
+    ci_strs_up = gen_cistr(L, ne[0])
+    ci_strs_dn = gen_cistr(L, ne[1])
 
     # choose the MOs
     Z = 0.j
     len_u, len_d = ci.shape
-    for u in range(len_u):
-        for d in range(len_d):
-            s_u = ci_strs[u]
-            s_d = ci_strs[d]
-            lu = slater_site.gen_det(lmo, s_u)
-            ru = slater_site.gen_det(rmo, s_u)
-            ld = slater_site.gen_det(lmo, s_d)
-            rd = slater_site.gen_det(rmo, s_d)
-            z_u = slater_site.ovlp_det(lu, ru)
-            z_d = slater_site.ovlp_det(ld, rd)
-            Z += z_u * z_d * ci[u, d]*ci[u, d].conj()
+    for up in range(len_u):
+        for dn in range(len_d):
+            occ_u = ci_strs_up[up]
+            occ_d = ci_strs_dn[dn]
+            bra = slater_site.gen_det(bra_mo, [occ_u, occ_d])
+            ket = slater_site.gen_det(ket_mo, [occ_u, occ_d])
+            _z = slater_site.ovlp_det(bra, ket)
+
+            coeff = ci[up, dn]*ci[up, dn].conj()
+            # print(up, dn, up, dn, _z, coeff)
+            Z += _z * coeff
 
     return np.linalg.norm(Z)
 
@@ -107,7 +119,7 @@ def compol_fci_prod(ci, norb, nelec, x0=.0):
         f1e_all = np.array([f1e, f0])
         delt = fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
         new_vec = np.copy(new_vec + delt)
-        print(np.linalg.norm(delt))
+        # print(np.linalg.norm(delt))
 
         f1e_all = np.array([f0, f1e])
         new_vec = new_vec + fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
@@ -118,7 +130,7 @@ def compol_fci_prod(ci, norb, nelec, x0=.0):
     return Z
 
 
-def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
+def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
     '''
     Evaluate the complex polarization with respect
     to a CI vector. 
@@ -135,7 +147,8 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
     Returns:
         A complex number, the complex polarization.
     '''
-    len_ci = ci.shape[-1]
+    len_cistr_u = ci.shape[0]
+    len_cistr_d = ci.shape[1]
     # \hat{Z} MO
     try:
         ndim = mo_coeff.ndim
@@ -155,25 +168,16 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
         neleca = ne[0]
         assert np.allclose(neleca*2, ne[0] + ne[1])
 
-        # ci_strs = gen_cistr(norb, neleca)
-        # for up_r in range(len_ci):
-        #     for up_l in range(len_ci):
-        #         occ_upl = ci_strs[up_l]
-        #         occ_upr = ci_strs[up_r]
-        #         ket = slater_site.gen_det(z_mo, occ_upr)
-        #         bra = slater_site.gen_det(mo_coeff, occ_upl)
-        #         coeff = ci[up_l, up_l].conj() * ci[up_r, up_r]
-        #         z_val += slater_site.ovlp_det(bra, ket) * coeff 
 
     z_mo = slater_site.z_sdet(norb, mo_coeff, x0=x0)
     z_val = 0.j
 
     ci_strs_up = gen_cistr(norb, ne[0])
     ci_strs_dn = gen_cistr(norb, ne[1])
-    for up_r in range(len_ci):
-        for dn_r in range(len_ci):
-            for up_l in range(len_ci):
-                for dn_l in range(len_ci):
+    for up_r in range(len_cistr_u):
+        for dn_r in range(len_cistr_d):
+            for up_l in range(len_cistr_u):
+                for dn_l in range(len_cistr_d):
                     # generate the ci strings
                     occ_upl = ci_strs_up[up_l]
                     occ_dnl = ci_strs_dn[dn_l]
@@ -183,6 +187,13 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
                     ket = slater_site.gen_det(z_mo, [occ_upr, occ_dnr])
                     bra = slater_site.gen_det(mo_coeff, [occ_upl, occ_dnl])
                     coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
-                    z_val += slater_site.ovlp_det(bra, ket) * coeff 
+                    z = slater_site.ovlp_det(bra, ket)
+                    # if up_r == up_l and dn_r == dn_l:
+                    #     # print(ket)
+                    #     # exit()
+                    #     print(up_r, dn_r, up_l, dn_l, z, coeff)
+                    # else:
+                    #     assert np.linalg.norm(z)<1e-10
+                    z_val +=  z * coeff 
                                                   
     return np.linalg.norm(z_val)
