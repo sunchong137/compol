@@ -150,40 +150,39 @@ def compol_ci_full(ci, norb, nelec, mo_coeff, x0=0.0):
         nelecb = nelec - neleca
         ne = [neleca, nelecb]
 
-    z_mo = slater_site.z_sdet(norb, mo_coeff, x0=x0)
-    z_val = 0.j
-
     if ndim == 2: # RHF
-        # TODO wrong
+        mo_coeff = np.array([mo_coeff, mo_coeff])
         neleca = ne[0]
         assert np.allclose(neleca*2, ne[0] + ne[1])
 
-        ci_strs = gen_cistr(norb, neleca)
-        for up_r in range(len_ci):
-            for up_l in range(len_ci):
-                occ_upl = ci_strs[up_l]
-                occ_upr = ci_strs[up_r]
-                ket = slater_site.gen_det(z_mo, occ_upr)
-                bra = slater_site.gen_det(mo_coeff, occ_upl)
-                coeff = ci[up_l, up_l].conj() * ci[up_r, up_r]
-                z_val += slater_site.ovlp_det(bra, ket) * coeff 
+        # ci_strs = gen_cistr(norb, neleca)
+        # for up_r in range(len_ci):
+        #     for up_l in range(len_ci):
+        #         occ_upl = ci_strs[up_l]
+        #         occ_upr = ci_strs[up_r]
+        #         ket = slater_site.gen_det(z_mo, occ_upr)
+        #         bra = slater_site.gen_det(mo_coeff, occ_upl)
+        #         coeff = ci[up_l, up_l].conj() * ci[up_r, up_r]
+        #         z_val += slater_site.ovlp_det(bra, ket) * coeff 
 
-    else:
-        ci_strs_up = gen_cistr(norb, ne[0])
-        ci_strs_dn = gen_cistr(norb, ne[1])
-        for up_r in range(len_ci):
-            for dn_r in range(len_ci):
-                for up_l in range(len_ci):
-                    for dn_l in range(len_ci):
-                        # generate the ci strings
-                        occ_upl = ci_strs_up[up_l]
-                        occ_dnl = ci_strs_dn[dn_l]
-                        occ_upr = ci_strs_up[up_r]
-                        occ_dnr = ci_strs_dn[dn_r]
-                        # generate the determinants
-                        ket = slater_site.gen_det(z_mo, [occ_upr, occ_dnr])
-                        bra = slater_site.gen_det(mo_coeff, [occ_upl, occ_dnl])
-                        coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
-                        z_val += slater_site.ovlp_det(bra, ket) * coeff 
+    z_mo = slater_site.z_sdet(norb, mo_coeff, x0=x0)
+    z_val = 0.j
+
+    ci_strs_up = gen_cistr(norb, ne[0])
+    ci_strs_dn = gen_cistr(norb, ne[1])
+    for up_r in range(len_ci):
+        for dn_r in range(len_ci):
+            for up_l in range(len_ci):
+                for dn_l in range(len_ci):
+                    # generate the ci strings
+                    occ_upl = ci_strs_up[up_l]
+                    occ_dnl = ci_strs_dn[dn_l]
+                    occ_upr = ci_strs_up[up_r]
+                    occ_dnr = ci_strs_dn[dn_r]
+                    # generate the determinants
+                    ket = slater_site.gen_det(z_mo, [occ_upr, occ_dnr])
+                    bra = slater_site.gen_det(mo_coeff, [occ_upl, occ_dnl])
+                    coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
+                    z_val += slater_site.ovlp_det(bra, ket) * coeff 
                                                   
     return np.linalg.norm(z_val)

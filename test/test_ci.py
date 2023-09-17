@@ -71,7 +71,7 @@ def test_z_ci():
     assert np.allclose(np.abs(z), 0)
 
 
-def test_compol_fci_site():
+def test_compol_fci_funcs():
     #RHF 
     norb = 6
     nelec = 4
@@ -83,9 +83,9 @@ def test_compol_fci_site():
     ci /= np.linalg.norm(ci)
     ci_strs = civecs.gen_cistr(norb, nelec//2)
     z = civecs.compol_fci_site(norb, ci, ci_strs, x0=0.0)
-    z2 = civecs.compol_ci_full(ci, norb, nelec, [mo, mo])
+    z2 = civecs.compol_ci_full(ci, norb, nelec, mo, x0=0.0)
     print(z)
     print(z2)
     # assert np.abs(z) <= 1
 
-test_compol_fci_site()
+test_compol_fci_funcs()
