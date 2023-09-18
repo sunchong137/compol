@@ -4,7 +4,8 @@ Standard and disordered Hubbard model.
 import numpy as np
 import helpers
 from pyscf import gto, scf, ao2mo, fci
-from scipy import special
+import logging
+# from scipy import special
 
 def hubham_1d(nsite, U, pbc=True):
     '''
@@ -74,7 +75,7 @@ def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
     if nelec is None:
         nelec = int(nsite * filling + 1e-10)
     if abs(nelec - nsite * filling) > 1e-2:
-        print("Warning: changing filling to {:0.2f} to keep integer number of electrons!".format(nelec/nsite))
+        logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
     
     mol.nelectron = nsite
     h1e, eri = hubham_1d(nsite, U, pbc=pbc)
@@ -97,14 +98,14 @@ def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
         mf.kernel()
     return mf
 
-def hubbard_fci(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
+def hubbard_fci(nsite, U, nelec=None, pbc=True, filling=1.0):
     
     h1e, eri = hubham_1d(nsite, U, pbc)
 
     if nelec is None:
         nelec = int(nsite * filling + 1e-10)
     if abs(nelec - nsite * filling) > 1e-2:
-        print("Warning: changing filling to {:0.2f} to keep integer number of electrons!".format(nelec/nsite))
+        logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
     
     # initial guess
     try:

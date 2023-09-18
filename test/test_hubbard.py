@@ -94,4 +94,15 @@ def test_fci():
     e_per_site = e_fci / norb
     assert abs(e_per_site - bethe) < 1e-1
 
-# test_fci()
+def test_filling():
+    '''
+    Test different fillings.
+    '''
+    norb = 18
+    U = 8
+    spin = 1
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin, filling=0.6)
+    e = mymf.energy_elec()[0]
+    
+
+test_filling()
