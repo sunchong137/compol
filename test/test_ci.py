@@ -71,12 +71,12 @@ def test_z_ci():
     assert np.allclose(np.abs(z), 0)
 
 
-def test_compol_fci_funcs():
+def test_compare_full_site():
 
     norb = 4
     nelec = 2
     len_ci = int(comb(norb, nelec//2))
-    H, _ = hubbard.hamilt_hubbard(norb, U=0) 
+    H, _ = hubbard.hamilt_hubbard(norb, U=4) 
     # _, mo = np.linalg.eigh(H) 
     mo = np.eye(norb)
     # np.random.seed(0)
@@ -88,4 +88,25 @@ def test_compol_fci_funcs():
 
     assert np.allclose(z, z2)
 
-test_compol_fci_funcs()
+def test_compol_prod():
+
+    norb = 6
+    # nelec = 4
+    nelec = (2, 2)
+    ci_strs = civecs.gen_cistr(norb, nelec[0])
+    len_ci = len(ci_strs)
+    # len_ci = int(comb(norb, nelec//2))
+    # len_ci = int(comb(norb, nelec//2))
+    H, _ = hubbard.hamilt_hubbard(norb, U=4) 
+    # _, mo = np.linalg.eigh(H) 
+    mo = np.eye(norb)
+    np.random.seed(0)
+    ci = np.random.rand(len_ci, len_ci)
+    ci = ci + ci.T
+    ci /= np.linalg.norm(ci)
+    z = civecs.compol_fci_prod(ci, norb, nelec, x0=.0)
+    z2 = civecs.compol_fci_site(norb, ci, nelec, x0=0.0)
+    print(z)
+    print(z2)
+
+test_compol_prod()

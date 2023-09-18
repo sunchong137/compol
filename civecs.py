@@ -90,13 +90,14 @@ def compol_fci_site(L, ci, nelec, x0=0.0):
     return np.linalg.norm(Z)
 
 
-def compol_fci_prod(ci, norb, nelec, x0=.0):
+def compol_fci_prod(ci, norb, nelec, x0=0.):
     '''
     Compute complex polarization given a ci vector using the following formula:
     ...math:
     Z = exp(i 2pi/L X) = \prod (I + (exp(i 2pi/L a) - 1)N_a)
     where a is the coordinate of the orbital, and N_a is the number operator on a.
 
+    Note: ci should be in the site basis.
     Args:
         ci: 1d array, the coefficients of the fci ground state.
         norb: int, number of orbitals.
@@ -105,29 +106,33 @@ def compol_fci_prod(ci, norb, nelec, x0=.0):
         x0: float, origin
     Returns:
         complex number.
-    NOTE: the result is off...
+    NOTE: Doesn't work...
     '''
     ci_vec = ci + 0.j*ci # change dtype
     ci_vec = ci_vec.flatten()
     new_vec = np.copy(ci_vec)
     f0 = np.zeros((norb, norb), dtype=np.complex128)
+    f0 = np.eye(norb, dtype=np.complex128)
+    ne_tot = nelec[0] + nelec[1]
+    f0 /= ne_tot # equal to identity
+    # f0 /= nelec[0]
+    # f0_u = f0 / ne_tot
+    # f0_d = f0 / ne_tot
+    # na, nb = nelec
 
-    # spin up
     for site in range(norb):
         f1e = np.zeros((norb, norb), dtype=np.complex128)
-        f1e[site, site] = np.exp(2.j * np.pi * (site+x0) / norb) - 1
-        f1e_all = np.array([f1e, f0])
-        delt = fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
-        new_vec = np.copy(new_vec + delt)
-        # print(np.linalg.norm(delt))
+        f1e[site, site] = (np.exp(2.j * Pi * (site+x0) / norb) - 1)
 
-        f1e_all = np.array([f0, f1e])
-        new_vec = new_vec + fcisolver.contract_1e(f1e_all, new_vec, norb, nelec)
+        # spin up
+        f1e_up = np.array([f0+f1e, f0])
+        new_vec = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec)
+        f1e_dn = np.array([f0, f0+f1e])
+        new_vec = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec)
 
-        #print(site, np.linalg.norm(new_vec))
-
-    Z = np.dot(ci_vec, new_vec)
-    return Z
+    Z = np.dot(ci_vec.conj(), new_vec) / np.linalg.norm(new_vec)
+    
+    return np.linalg.norm(Z)
 
 
 def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
