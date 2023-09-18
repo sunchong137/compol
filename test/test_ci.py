@@ -7,23 +7,6 @@ from scipy.special import comb
 import time 
 
 
-def test_compol_fci():
-    n = 10
-    U = 0
-    h1 = np.zeros((n,n))
-    for i in range(n-1):
-        h1[i,i+1] = h1[i+1,i] = -1.0
-    h1[n-1,0] = h1[0,n-1] = -1.0  # PBC
-    eri = np.zeros((n,n,n,n))
-    for i in range(n):
-        eri[i,i,i,i] = U
-    myci = fci.direct_spin1
-    e, c = myci.kernel(h1, eri, n, n)
-    z = civecs.compol_fci_prod(c, n, n, x0=-n/2)
-    print(z)
-    
-    # compare to UHF
-
 def test_gen_strs():
     norb = 4
     nelec = 2
@@ -39,9 +22,9 @@ def test_gen_strs():
         [0,1,0,1],
         [0,0,1,1]
     ])
-    # print(cistrs)
+
     assert np.allclose(cistrs, ref)
-# test_gen_strs()
+
 
 def test_z_ci():
 
@@ -49,7 +32,7 @@ def test_z_ci():
     norb = 6
     nelec = 4
     len_ci = int(comb(norb, nelec))
-    H, _ = hubbard.hamilt_hubbard(norb, U=0) 
+    H, _ = hubbard.hubham_1d(norb, U=0) 
     _, mo = np.linalg.eigh(H)
     ci = np.random.rand(len_ci, len_ci)
     ci /= np.linalg.norm(ci)
@@ -60,7 +43,7 @@ def test_z_ci():
     norb = 6
     nelec = 6
     len_ci = int(comb(norb, nelec))
-    H, _ = hubbard.hamilt_hubbard(norb, U=0) 
+    H, _ = hubbard.hubham_1d(norb, U=0) 
     _, mo = np.linalg.eigh(H)
     mo = np.array([mo, mo])
     ci = np.random.rand(len_ci, len_ci)
@@ -76,7 +59,7 @@ def test_compare_full_site():
     norb = 4
     nelec = 2
     len_ci = int(comb(norb, nelec//2))
-    H, _ = hubbard.hamilt_hubbard(norb, U=4) 
+    H, _ = hubbard.hubham_1d(norb, U=4) 
     # _, mo = np.linalg.eigh(H) 
     mo = np.eye(norb)
     # np.random.seed(0)
@@ -88,25 +71,3 @@ def test_compare_full_site():
 
     assert np.allclose(z, z2)
 
-def test_compol_prod():
-
-    norb = 6
-    # nelec = 4
-    nelec = (2, 2)
-    ci_strs = civecs.gen_cistr(norb, nelec[0])
-    len_ci = len(ci_strs)
-    # len_ci = int(comb(norb, nelec//2))
-    # len_ci = int(comb(norb, nelec//2))
-    H, _ = hubbard.hamilt_hubbard(norb, U=4) 
-    # _, mo = np.linalg.eigh(H) 
-    mo = np.eye(norb)
-    np.random.seed(0)
-    ci = np.random.rand(len_ci, len_ci)
-    ci = ci + ci.T
-    ci /= np.linalg.norm(ci)
-    z = civecs.compol_fci_prod(ci, norb, nelec, x0=.0)
-    z2 = civecs.compol_fci_site(norb, ci, nelec, x0=0.0)
-    print(z)
-    print(z2)
-
-test_compol_prod()

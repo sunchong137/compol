@@ -4,7 +4,7 @@ sys.path.append("../")
 import hubbard, helpers
 import slater_site
 from pyscf import gto, scf, ao2mo, fci
-
+import time
 
 
 def test_mf_rhf():
@@ -94,23 +94,21 @@ def test_fci():
     bethe = -0.573729
     norb = 10
     U = 4
+    pbc = True
     spin = 0
-    mymf = hubbard.hubbard_mf(norb, U, spin=spin)
-    e_fci, ci = hubbard.hubbard_fci(mymf)
+    t1 = time.time()
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin, pbc=pbc)
+    e_fci, ci = hubbard.hubbard_fci_from_mf(mymf)
+    # print(e_fci)
+    t2 = time.time()
+    e_fci2, ci2 = hubbard.hubbard_fci(norb, U, pbc=pbc)
+    t3 = time.time()
+    assert np.allclose(e_fci, e_fci2)
+    # print(t2-t1, t3-t2)
+    # print(e_fci - e_fci2)
+    # exit()
     # compare to pyscf 
-    n = norb
-    h1 = np.zeros((n,n))
-    for i in range(n-1):
-        h1[i,i+1] = h1[i+1,i] = -1.0
-    h1[n-1,0] = h1[0,n-1] = -1.0  # PBC
-    eri = np.zeros((n,n,n,n))
-    for i in range(n):
-        eri[i,i,i,i] = 4.0
-    myci = fci.direct_spin0
-    e, c = myci.kernel(h1, eri, n, n)
-    # c and ci are not the same because they are based on different 
-    e_per_site = e / n
-    assert np.allclose(e, e_fci)
+    e_per_site = e_fci / norb
     assert abs(e_per_site - bethe) < 1e-1
 
 test_fci()

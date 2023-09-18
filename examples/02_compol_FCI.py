@@ -25,7 +25,7 @@ mo_coeff = mymf.mo_coeff
 # TODO replace the following with helpers function.
 # rotate h1e 
 
-h1e, eri = hubbard.hamilt_hubbard(norb, U, pbc=True)
+h1e, eri = hubbard.hubham_1d(norb, U, pbc=True)
 h1_a = mo_coeff[0].T.conj()@h1e@mo_coeff[0]
 h1_b = mo_coeff[1].T.conj()@h1e@mo_coeff[1]
 h1e_n = np.array([h1_a, h1_b])
