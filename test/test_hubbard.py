@@ -104,5 +104,5 @@ def test_filling():
     mymf = hubbard.hubbard_mf(norb, U, spin=spin, filling=0.6)
     e = mymf.energy_elec()[0]
     
-
-test_filling()
+def test_disorder():
+    pass

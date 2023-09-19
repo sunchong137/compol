@@ -38,7 +38,7 @@ def gen_cistr(norb, nelec):
     return bin_strs
 
 
-def compol_fci_site(L, ci, nelec, x0=0.0):
+def compol_fci_site(ci, L, nelec, x0=0.0):
     '''
     Only for RHF.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
@@ -108,13 +108,13 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         complex number.
     NOTE: Doesn't work...
     '''
-    ci_vec = ci + 0.j*ci # change dtype
-    ci_vec = ci_vec.flatten()
+    ci_vec = ci.astype(complex)
+    ci_vec = ci_vec.ravel()
     new_vec = np.copy(ci_vec)
     f0 = np.zeros((norb, norb), dtype=np.complex128)
-    f0 = np.eye(norb, dtype=np.complex128)
-    ne_tot = nelec[0] + nelec[1]
-    f0 /= ne_tot # equal to identity
+    # f0 = np.eye(norb, dtype=complex)
+    # ne_tot = nelec[0] + nelec[1]
+    # f0 /= ne_tot # equal to identity
     # f0 /= nelec[0]
     # f0_u = f0 / ne_tot
     # f0_d = f0 / ne_tot
@@ -122,13 +122,18 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
 
     for site in range(norb):
         f1e = np.zeros((norb, norb), dtype=np.complex128)
-        f1e[site, site] = (np.exp(2.j * Pi * (site+x0) / norb) - 1)
+        f1e[site, site] = 1.0
+        coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
 
         # spin up
-        f1e_up = np.array([f0+f1e, f0])
-        new_vec = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec)
-        f1e_dn = np.array([f0, f0+f1e])
-        new_vec = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec)
+        f1e_up = np.array([f1e, f0])
+        delt = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec) * coeff
+        new_vec = np.copy(new_vec + delt)
+        # print(np.linalg.norm(new_vec))
+
+        f1e_dn = np.array([f0, f1e])
+        delt = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
+        new_vec = np.copy(new_vec + delt)
 
     Z = np.dot(ci_vec.conj(), new_vec) / np.linalg.norm(new_vec)
     
