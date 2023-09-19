@@ -73,7 +73,7 @@ def test_compare_full_site():
 
 def test_compol_prod():
 
-    norb = 6
+    norb = 4
     # nelec = 4
     nelec = (2, 2)
     ci_strs = civecs.gen_cistr(norb, nelec[0])
@@ -81,12 +81,13 @@ def test_compol_prod():
     # len_ci = int(comb(norb, nelec//2))
     # len_ci = int(comb(norb, nelec//2))
     x0 = norb/2
+    x0=0
     np.random.seed(0)
     ci = np.random.rand(len_ci, len_ci)
     ci = ci + ci.T
     ci /= np.linalg.norm(ci)
-    ci = np.zeros_like(ci)
-    ci[0,0] = 1
+    # ci = np.zeros_like(ci)
+    # ci[0,0] = 1
     z = civecs.compol_fci_prod(ci, norb, nelec, x0=x0)
     z2 = civecs.compol_fci_site(ci, norb, nelec, x0=x0)
     print(z)

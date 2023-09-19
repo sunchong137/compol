@@ -109,9 +109,10 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
     NOTE: Doesn't work...
     '''
     ci_vec = ci.astype(complex)
-    ci_vec = ci_vec.ravel()
+    ci_vec = np.copy(ci)
+    # ci_vec = ci_vec.ravel()
     new_vec = np.copy(ci_vec)
-    f0 = np.zeros((norb, norb), dtype=np.complex128)
+    f0 = np.zeros((norb, norb))
     # f0 = np.eye(norb, dtype=complex)
     # ne_tot = nelec[0] + nelec[1]
     # f0 /= ne_tot # equal to identity
@@ -119,22 +120,82 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
     # f0_u = f0 / ne_tot
     # f0_d = f0 / ne_tot
     # na, nb = nelec
+    # eri = np.zeros((3, norb, norb, norb, norb))
 
     for site in range(norb):
-        f1e = np.zeros((norb, norb), dtype=np.complex128)
+        f1e = np.zeros((norb, norb))
         f1e[site, site] = 1.0
+        f1e_up = np.array([f0, f1e])
         coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
-
+        coeff = 1
+        # h2e = fcisolver.absorb_h1e(f1e_up, eri, norb, nelec, 1)
         # spin up
+        
+        # delt = fcisolver.contract_2e(h2e, new_vec, norb, nelec) * coeff
+        delt = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec)
+        print(delt)
+        # new_vec = np.copy(new_vec + delt)
+        # # print(np.linalg.norm(new_vec))
+
+        # f1e_dn = np.array([f0, f1e])
+        # delt = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
+        # new_vec = np.copy(new_vec + delt)
+    exit()
+    Z = np.dot(ci_vec.conj(), new_vec) / np.linalg.norm(new_vec)
+    
+    return np.linalg.norm(Z)
+
+
+def compol_fci_prod_bkup(ci, norb, nelec, x0=0.):
+    '''
+    Compute complex polarization given a ci vector using the following formula:
+    ...math:
+    Z = exp(i 2pi/L X) = \prod (I + (exp(i 2pi/L a) - 1)N_a)
+    where a is the coordinate of the orbital, and N_a is the number operator on a.
+
+    Note: ci should be in the site basis.
+    Args:
+        ci: 1d array, the coefficients of the fci ground state.
+        norb: int, number of orbitals.
+        nelec: int or tuple, number of electrons
+    Kwargs:
+        x0: float, origin
+    Returns:
+        complex number.
+    NOTE: Doesn't work...
+    '''
+    ci_vec = ci.astype(complex)
+    ci_vec = np.copy(ci)
+    # ci_vec = ci_vec.ravel()
+    new_vec = np.copy(ci_vec)
+    f0 = np.zeros((norb, norb))
+    # f0 = np.eye(norb, dtype=complex)
+    # ne_tot = nelec[0] + nelec[1]
+    # f0 /= ne_tot # equal to identity
+    # f0 /= nelec[0]
+    # f0_u = f0 / ne_tot
+    # f0_d = f0 / ne_tot
+    # na, nb = nelec
+    eri = np.zeros((3, norb, norb, norb, norb))
+
+    for site in range(norb):
+        f1e = np.zeros((norb, norb))
+        f1e[site, site] = 1.0
         f1e_up = np.array([f1e, f0])
-        delt = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec) * coeff
-        new_vec = np.copy(new_vec + delt)
-        # print(np.linalg.norm(new_vec))
+        coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
+        coeff = 1
+        h2e = fcisolver.absorb_h1e(f1e_up, eri, norb, nelec, 1)
+        # spin up
+        
+        delt = fcisolver.contract_2e(h2e, new_vec, norb, nelec) * coeff
+        print(delt)
+        # new_vec = np.copy(new_vec + delt)
+        # # print(np.linalg.norm(new_vec))
 
-        f1e_dn = np.array([f0, f1e])
-        delt = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
-        new_vec = np.copy(new_vec + delt)
-
+        # f1e_dn = np.array([f0, f1e])
+        # delt = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
+        # new_vec = np.copy(new_vec + delt)
+    exit()
     Z = np.dot(ci_vec.conj(), new_vec) / np.linalg.norm(new_vec)
     
     return np.linalg.norm(Z)
