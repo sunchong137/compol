@@ -36,30 +36,30 @@ def gen_det(mo_coeff, occ):
         dets = np.copy(mo_coeff[:, idx])#.reshape(norb, nocc)
     return dets
 
-def z_sdet(L, mo_coeff, x0=0.0):
+def z_sdet(L, sdet, x0=0.0):
     '''
     Applies complex polarzation Z onto a Slater determinant represented
-    by mo_coeff. 
+    by sdet. 
     Even though Z is an L-body operator, it operating on a Slater determinant
     gives another Slater determinant with the AO basis rotated.
     Args:
         L: integer, number of sites.
-        mo_coeff: numpy array of size (spin, L, Nocc)
+        sdet: numpy array of size (spin, L, Nocc)
     kwargs:
         x0: origin.
     returns:
         numpy array of size (spin, L, Nocc), the new Slater determinant.
     '''
     try:
-        ndim = mo_coeff.ndim
+        ndim = sdet.ndim
     except: # list or tuple
         ndim = 3
 
     Z = gen_zmat_site(L, x0)
     if ndim == 2: # RHF
-        mo_new = np.dot(Z, mo_coeff)
+        mo_new = np.dot(Z, sdet)
     elif ndim == 3:
-        mo_new = np.array([np.dot(Z, mo_coeff[0]), np.dot(Z, mo_coeff[1])])
+        mo_new = np.array([np.dot(Z, sdet[0]), np.dot(Z, sdet[1])])
     else:
         raise ValueError("The MO coefficient matrix is an array.")
     return mo_new
@@ -74,7 +74,6 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
         ao_ovlp: overlap matrix of AO orbitals, always identity for site basis.
     Returns:
         a complex number: overlap between two determinants.
-    TODO change np.dot to @
     '''
     try:
         ndim = sdet1.ndim
@@ -86,16 +85,16 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
             ovlp = np.linalg.det(np.dot(sdet1.T.conj(), sdet2))
             ovlp = ovlp ** 2
         elif ndim == 3:
-            ovlp1 = np.linalg.det(np.dot(sdet1[0].T.conj(), sdet2[0]))
-            ovlp2 = np.linalg.det(np.dot(sdet1[1].T.conj(), sdet2[1]))
+            ovlp1 = np.linalg.det(sdet1[0].T.conj() @ sdet2[0])
+            ovlp2 = np.linalg.det(sdet1[1].T.conj() @ sdet2[1])
             ovlp = ovlp1 * ovlp2 
     else:
         if ndim == 2:
-            ovlp = np.linalg.det(np.dot(np.dot(sdet1.T.conj(), ao_ovlp), sdet2))
+            ovlp = np.linalg.det(sdet1.T.conj() @ ao_ovlp @ sdet2)
             ovlp = ovlp * ovlp
         elif ndim == 3:
-            ovlp1 = np.linalg.det(np.dot(np.dot(sdet1[0].T.conj(), ao_ovlp), sdet2[0]))
-            ovlp2 = np.linalg.det(np.dot(np.dot(sdet1[1].T.conj(), ao_ovlp), sdet2[1]))
+            ovlp1 = np.linalg.det(sdet1[0].T.conj() @ ao_ovlp @ sdet2[0])
+            ovlp2 = np.linalg.det(sdet1[1].T.conj() @ ao_ovlp @ sdet2[1])
             ovlp = ovlp1 * ovlp2 
 
     return ovlp

@@ -2,7 +2,7 @@ import numpy as np
 import sys
 sys.path.append("../")
 import hubbard, helpers
-import slater_site
+import slater_uhf
 from pyscf import gto, scf, ao2mo, fci
 import time
 
