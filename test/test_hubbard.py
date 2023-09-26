@@ -113,3 +113,14 @@ def test_spinless():
     mf = hubbard.hubbard_spinless_mf(nsite, V, nelec=None, pbc=False, filling=0.8)
     rdm1 = mf.make_rdm1()
 
+def test_spinless_fci():
+    nsite = 6
+    V = 4
+    e, c = hubbard.hubbard_spinless_fci(nsite, V, nelec=None, pbc=False, filling=1.0)
+    # print(e)
+    # print(c)
+    cisolver = fci.direct_uhf
+    # rdm1 = cisolver.make_rdm1s(c, nsite, (nsite//2, 0))
+    # print(rdm1)
+
+test_spinless_fci()

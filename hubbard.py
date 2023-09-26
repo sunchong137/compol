@@ -126,7 +126,7 @@ def hubbard_spinless_mf(nsite, V, nelec=None, pbc=True, filling=1.0):
     Mean-field for spinless Hubbard model.
     '''
     mol = gto.M()
-
+    filling /= 2 # spinless 
     if nelec is None:
         nelec = int(nsite * filling + 1e-10)
     if abs(nelec - nsite * filling) > 1e-2:
@@ -142,11 +142,9 @@ def hubbard_spinless_mf(nsite, V, nelec=None, pbc=True, filling=1.0):
     mf.get_ovlp = lambda *args: np.eye(nsite)
     mf._eri = ao2mo.restore(8, eri, nsite)
     mol.incore_anyway = True
-
     mf.kernel()
 
     return mf
-
 
 
 def hubbard_fci(nsite, U, nelec=None, pbc=True, filling=1.0):
@@ -177,6 +175,28 @@ def hubbard_fci(nsite, U, nelec=None, pbc=True, filling=1.0):
 
     e, c = cisolver.kernel(h1e, eri, nsite, nelec)
     return e, c
+
+
+def hubbard_spinless_fci(nsite, V, nelec=None, pbc=True, filling=1.0):
+
+    h1e, eri = hubham_spinless_1d(nsite, V, pbc)
+    h1_0 = np.zeros_like(h1e)
+    h2_0 = np.zeros_like(eri)
+
+    filling /= 2
+    if nelec is None:
+        nelec = int(nsite * filling + 1e-10)
+    if abs(nelec - nsite * filling) > 1e-2:
+        logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
+
+    cisolver = fci.direct_uhf
+    h1_uhf = (h1e, h1_0)
+    h2_uhf = (eri, h2_0, h2_0)
+    # h1_uhf = (h1e, h1e)
+    # h2_uhf = (eri, eri, eri)
+    e, c = cisolver.kernel(h1_uhf, h2_uhf, nsite, (nelec, 0))
+    return e, c
+
 
 def hubbard_fci_from_mf(mf):
     '''
