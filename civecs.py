@@ -133,14 +133,13 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         
         # delt = fcisolver.contract_2e(h2e, new_vec, norb, nelec) * coeff
         delt = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec)
-        print(delt)
+        # print(delt)
         # new_vec = np.copy(new_vec + delt)
         # # print(np.linalg.norm(new_vec))
 
         # f1e_dn = np.array([f0, f1e])
         # delt = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
         # new_vec = np.copy(new_vec + delt)
-    exit()
     Z = np.dot(ci_vec.conj(), new_vec) / np.linalg.norm(new_vec)
     
     return np.linalg.norm(Z)

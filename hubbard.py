@@ -20,19 +20,19 @@ def hubham_1d(nsite, U, pbc=True):
         4D array: h2e
     '''
     h1e = np.zeros((nsite, nsite))
-    eri = np.zeros((nsite,)*4)
+    h2e = np.zeros((nsite,)*4)
 
     for i in range(nsite-1):
         h1e[i, (i+1)] = -1.
         h1e[(i+1), i] = -1.
-        eri[i,i,i,i] = U
-    eri[-1,-1,-1,-1] = U
+        h2e[i,i,i,i] = U
+    h2e[-1,-1,-1,-1] = U
 
     if pbc:
         # assert nsite%4 == 2, "PBC requires nsite = 4n+2!"
         h1e[0, -1] = -1.
         h1e[-1, 0] = -1.
-    return h1e, eri
+    return h1e, h2e
 
 def hamhub_2d():
     pass
@@ -42,17 +42,40 @@ def hubham_noisy_1d(nsite, U, pbc=True, max_w=1.0):
     Add diagonal noise to the original Hubbard model.
     The noise is a uniform distribution in [-max_w, max_w]
     '''
-    h1e, eri = hubham_1d(nsite, U, pbc)
+    h1e, h2e = hubham_1d(nsite, U, pbc)
     # generate uniform distribution
     noise = (np.random.rand(nsite)*2-1) * max_w
     noise = np.diag(noise)
-    return h1e+noise, eri
+    return h1e+noise, h2e
 
-def hubham_spinless_1d():
+def hubham_spinless_1d(nsite, V, pbc=True):
     '''
     Spinless Hubbard model with nearest neighbor e-e interaction.
+    
+        :math: H = t \sum_i c^\dag_i c_{i+1} + V \sum_i n_i n_i+1
     '''
-    pass
+    h1e = np.zeros((nsite, nsite))
+    h2e = np.zeros((nsite,)*4)
+
+    for i in range(nsite-1):
+        h1e[i, i+1] = -1.
+        h1e[i+1, i] = -1.
+        h2e[i, i, i+1, i+1] = V
+        h2e[i+1, i+1, i, i] = V
+    if pbc:
+        h1e[0, -1] = h1e[-1, 0] = -1.
+        h2e[0, 0, -1, -1] = h2e[-1, -1, 0, 0] = V 
+    return h1e, h2e
+
+def hubham_spinless_noisy_1d(nsite, V, pbc=True, max_w=1.0):
+    '''
+    Add noise to the spinless Hubbard model.
+    '''
+    h1e, h2e = hubham_spinless_1d(nsite, V, pbc)
+    # generate uniform distribution
+    noise = (np.random.rand(nsite)*2-1) * max_w
+    noise = np.diag(noise)
+    return h1e+noise, h2e
 
 def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
     '''
@@ -77,7 +100,7 @@ def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
     if abs(nelec - nsite * filling) > 1e-2:
         logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
     
-    mol.nelectron = nsite
+    mol.nelectron = nelec
     h1e, eri = hubham_1d(nsite, U, pbc=pbc)
     
     if spin == 0:
@@ -97,6 +120,34 @@ def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
     else:
         mf.kernel()
     return mf
+
+def hubbard_spinless_mf(nsite, V, nelec=None, pbc=True, filling=1.0):
+    '''
+    Mean-field for spinless Hubbard model.
+    '''
+    mol = gto.M()
+
+    if nelec is None:
+        nelec = int(nsite * filling + 1e-10)
+    if abs(nelec - nsite * filling) > 1e-2:
+        logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
+    
+
+    mol.nelectron = nelec
+    mol.spin = nelec
+    h1e, eri = hubham_spinless_1d(nsite, V, pbc=pbc)
+    
+    mf = scf.UHF(mol)
+    mf.get_hcore = lambda *args: h1e 
+    mf.get_ovlp = lambda *args: np.eye(nsite)
+    mf._eri = ao2mo.restore(8, eri, nsite)
+    mol.incore_anyway = True
+
+    mf.kernel()
+
+    return mf
+
+
 
 def hubbard_fci(nsite, U, nelec=None, pbc=True, filling=1.0):
     

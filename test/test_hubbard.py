@@ -106,3 +106,10 @@ def test_filling():
     
 def test_disorder():
     pass
+
+def test_spinless():
+    nsite = 10
+    V = 4
+    mf = hubbard.hubbard_spinless_mf(nsite, V, nelec=None, pbc=False, filling=0.8)
+    rdm1 = mf.make_rdm1()
+
