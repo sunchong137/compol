@@ -6,45 +6,18 @@ import numpy as np
 from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
-import slater_uhf
+import slater_spinless, civecs
 
 Pi = np.pi
 
 def gen_cistr(norb, nelec):
-    '''
-    Generate all possible string representations of the 
-    occupations for a set of spin orbitals.
-    Returns:
-        2D array of size (norb choose nelec, norb) 
-        A list of strings representing the occupation.
-    Examples:
-    >>> gen_cistr(4, 2)
-        [[1 1 0 0]
-         [1 0 1 0]
-         [0 1 1 0]
-         [1 0 0 1]
-         [0 1 0 1]
-         [0 0 1 1]]
-    '''
-
-    orb_list = np.arange(norb)
-    cistrs = cistring.make_strings(orb_list, nelec)
-    bin_strs = []
-    for s in cistrs:
-        bin_form = numpy_helper.base_repr_int(s, 2, norb)[::-1]
-        # # orbital starts from the right to the left.
-        bin_strs.append(bin_form)
-    bin_strs = np.array(bin_strs)
-    return bin_strs
-
+    return civecs.gen_cistr(norb, nelec)
 
 def compol_fci_site(ci, L, nelec, x0=0.0):
     '''
     Only for RHF.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
     < phi_i |Z| phi_i>, and the others are zero.
-    Caution: if the "HF" solution is too far away from the true solution,
-             then FCI might not converge.
     Args:
         L: number of orbitals
         civec: FCI coefficients
@@ -52,36 +25,23 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
         float
     '''
     # define complex polarization
-    Z = slater_uhf.gen_zmat_site(L, x0)
+    Z = slater_spinless.gen_zmat_site(L, x0)
 
     # define site basis orbitals. 
     bra_mo = np.eye(L)
     ket_mo = np.dot(Z, bra_mo)
 
-    bra_mo = np.array([bra_mo, bra_mo])
-    ket_mo = np.array([ket_mo, ket_mo])
-
-    try:
-        neleca = nelec[0] # nelec as tuple
-        ne = nelec
-    except:
-        neleca = nelec // 2
-        nelecb = nelec - neleca
-        ne = [neleca, nelecb]
-
-    ci_strs_up = gen_cistr(L, ne[0])
-    ci_strs_dn = gen_cistr(L, ne[1])
-
+    ci_strs = gen_cistr(L, nelec)
     # choose the MOs
     Z = 0.j
-    len_u, len_d = ci.shape
+    len_u, len_d = ci.shape # check ci shape for spinless
+    # TODO rewrite here
     for up in range(len_u):
         for dn in range(len_d):
-            occ_u = ci_strs_up[up]
-            occ_d = ci_strs_dn[dn]
-            bra = slater_uhf.gen_det(bra_mo, [occ_u, occ_d])
-            ket = slater_uhf.gen_det(ket_mo, [occ_u, occ_d])
-            _z = slater_uhf.ovlp_det(bra, ket)
+            occ = ci_strs
+            bra = slater_spinless.gen_det(bra_mo, [occ_u, occ_d])
+            ket = slater_spinless.gen_det(ket_mo, [occ_u, occ_d])
+            _z = slater_spinless.ovlp_det(bra, ket)
 
             coeff = ci[up, dn]*ci[up, dn].conj()
             # print(up, dn, up, dn, _z, coeff)
@@ -239,7 +199,7 @@ def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
         assert np.allclose(neleca*2, ne[0] + ne[1])
 
 
-    z_mo = slater_uhf.z_sdet(norb, mo_coeff, x0=x0)
+    z_mo = slater_spinless.z_sdet(norb, mo_coeff, x0=x0)
     z_val = 0.j
 
     ci_strs_up = gen_cistr(norb, ne[0])
@@ -254,10 +214,10 @@ def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
                     occ_upr = ci_strs_up[up_r]
                     occ_dnr = ci_strs_dn[dn_r]
                     # generate the determinants
-                    ket = slater_uhf.gen_det(z_mo, [occ_upr, occ_dnr])
-                    bra = slater_uhf.gen_det(mo_coeff, [occ_upl, occ_dnl])
+                    ket = slater_spinless.gen_det(z_mo, [occ_upr, occ_dnr])
+                    bra = slater_spinless.gen_det(mo_coeff, [occ_upl, occ_dnl])
                     coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
-                    z = slater_uhf.ovlp_det(bra, ket)
+                    z = slater_spinless.ovlp_det(bra, ket)
                     # if up_r == up_l and dn_r == dn_l:
                     #     # print(ket)
                     #     # exit()

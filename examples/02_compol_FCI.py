@@ -5,7 +5,7 @@ import numpy as np
 import sys
 sys.path.append("../")
 import hubbard
-import slater_site, helpers 
+import slater_uhf, helpers 
 from pyscf import ao2mo, fci
 
 norb = 10
