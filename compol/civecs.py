@@ -19,7 +19,7 @@ import numpy as np
 from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
-import slater_uhf
+from compol import slater_uhf
 
 Pi = np.pi
 
@@ -119,7 +119,7 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         x0: float, origin
     Returns:
         complex number.
-    NOTE: Doesn't work...
+    NOTE: This does't work because pyscf fci does not take complex numbers.
     '''
     ci_vec = ci.astype(complex)
     ci_vec = np.copy(ci)

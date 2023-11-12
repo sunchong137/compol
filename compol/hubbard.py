@@ -16,10 +16,9 @@
 Standard and disordered Hubbard model.
 '''
 import numpy as np
-import helpers
-from pyscf import gto, scf, ao2mo, fci
 import logging
-# from scipy import special
+from pyscf import gto, scf, ao2mo, fci
+from compol import helpers
 
 def hubham_1d(nsite, U, pbc=True):
     '''
@@ -204,12 +203,11 @@ def hubbard_spinless_fci(nsite, V, nelec=None, pbc=True, filling=1.0):
         logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
 
     cisolver = fci.direct_uhf
-    h1_uhf = (h1e, h1_0)
-    h2_uhf = (eri, h2_0, h2_0)
-    # h1_uhf = (h1e, h1e)
-    # h2_uhf = (eri, eri, eri)
-    e, c = cisolver.kernel(h1_uhf, h2_uhf, nsite, (nelec, 0))
-    return e, c
+    h1_uhf = (h1e, h1_0) # same as h1_uhf = (h1e, h1e)
+    h2_uhf = (eri, h2_0, h2_0)  # same as h2_uhf = (eri, eri, eri)
+    e, c = cisolver.kernel(h1_uhf, h2_uhf, nsite, (nelec, 0)) 
+    # c is of shape (nstr, 1)
+    return e, c.ravel()
 
 
 def hubbard_fci_from_mf(mf):

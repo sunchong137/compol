@@ -18,7 +18,7 @@ Evaluate complex polarization based on Slater determinants.
 '''
 
 import numpy as np 
-import slater_uhf
+from compol import slater_uhf
 
 Pi = np.pi
 
