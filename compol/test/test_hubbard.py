@@ -1,11 +1,20 @@
-import numpy as np
-import sys
-sys.path.append("../")
-import hubbard, helpers
-import slater_uhf
-from pyscf import gto, scf, ao2mo, fci
-import time
+# Copyright 2023 ComPol developers. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import numpy as np
+from compol import hubbard, helpers
+from pyscf import gto, scf, ao2mo, fci
 
 def test_mf_rhf():
     norb = 6
@@ -113,14 +122,33 @@ def test_spinless():
     mf = hubbard.hubbard_spinless_mf(nsite, V, nelec=None, pbc=False, filling=0.8)
     rdm1 = mf.make_rdm1()
 
-def test_spinless_fci():
-    nsite = 6
-    V = 4
-    e, c = hubbard.hubbard_spinless_fci(nsite, V, nelec=None, pbc=False, filling=1.0)
-    # print(e)
-    # print(c)
-    cisolver = fci.direct_uhf
-    # rdm1 = cisolver.make_rdm1s(c, nsite, (nsite//2, 0))
-    # print(rdm1)
 
-test_spinless_fci()
+def test_spinless_fci():
+    norb = 10
+    U = 4
+    spin = 1 
+    nelec = 5
+
+    # first do a mean-field calculation
+    mymf = hubbard.hubbard_spinless_mf(norb, U, nelec=nelec, pbc=True)
+    rdm1 = mymf.make_rdm1()
+    mo_coeff = mymf.mo_coeff
+
+    h1_mo, h2_mo = helpers.rotate_ham_spinless(mymf)
+
+    # FCI
+    cisolver = fci.direct_uhf.FCI()
+    e_fci, civec = cisolver.kernel(h1_mo, h2_mo, norb, (nelec, 0))
+
+    # # compare to pyscf 
+    h1e, eri = hubbard.hubham_spinless_1d(norb, U, pbc=True)
+    h1_0 = np.zeros_like(h1e)
+    h2_0 = np.zeros_like(eri)
+
+    cisolver = fci.direct_uhf
+    h1_uhf = (h1e, h1_0)
+    h2_uhf = (eri, h2_0, h2_0)
+    # h1_uhf = (h1e, h1e)
+    # h2_uhf = (eri, eri, eri)
+    e_fci_ref, c = cisolver.kernel(h1_uhf, h2_uhf, norb, (nelec, 0))
+    assert np.allclose(e_fci, e_fci_ref)

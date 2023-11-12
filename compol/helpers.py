@@ -45,3 +45,22 @@ def rotate_ham(mf):
     h2_mo = np.array([h2e_aaaa, h2e_aabb, h2e_bbbb])
 
     return h1_mo, h2_mo
+
+def rotate_ham_spinless(mf):
+    '''
+    Rotate the Hamiltonian from atomic orbitals to molecular orbitals.
+    '''
+    h1e = mf.get_hcore()
+    norb = mf.mol.nao
+    eri = mf._eri
+    mo_coeff = mf.mo_coeff
+    # aaaa, aabb, bbbb
+    C = mo_coeff[0]
+    aaaa = (C,)*4
+
+    h1_mo = np.array([C.T@h1e@C, h1e*0])
+    h2e_aaaa = ao2mo.incore.general(eri, aaaa, compact=False).reshape(norb, norb, norb, norb)
+
+    h2_mo = np.array([h2e_aaaa, h2e_aaaa*0, h2e_aaaa*0])
+
+    return h1_mo, h2_mo
