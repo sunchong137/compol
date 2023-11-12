@@ -92,6 +92,7 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
         for dn in range(len_d):
             occ_u = ci_strs_up[up]
             occ_d = ci_strs_dn[dn]
+            
             bra = slater_uhf.gen_det(bra_mo, [occ_u, occ_d])
             ket = slater_uhf.gen_det(ket_mo, [occ_u, occ_d])
             _z = slater_uhf.ovlp_det(bra, ket)

@@ -20,7 +20,7 @@ import logging
 from pyscf import gto, scf, ao2mo, fci
 from compol import helpers
 
-def hubham_1d(nsite, U, pbc=True):
+def hubham_1d(nsite, U, pbc=True, noisy=False, max_w=1.0, spin=0):
     '''
     Return 1D Hubbard model Hamiltonians (h1e and h2e).
     Unit: hopping amplitude t.
@@ -45,7 +45,22 @@ def hubham_1d(nsite, U, pbc=True):
         # assert nsite%4 == 2, "PBC requires nsite = 4n+2!"
         h1e[0, -1] = -1.
         h1e[-1, 0] = -1.
-    return h1e, h2e
+
+    if noisy:
+        if spin == 0:
+            noise = (np.random.rand(nsite)*2-1) * max_w
+            noise = np.diag(noise)
+            h1e += noise 
+            return h1e, h2e
+        elif spin == 1:
+            noise1 = (np.random.rand(nsite)*2-1) * max_w
+            noise2 = (np.random.rand(nsite)*2-1) * max_w
+            return [h1e+np.diag(noise1), h1e+np.diag(noise2)], h2e
+        else:
+            raise ValueError("spin has to be 0 or 1.")
+    else:
+        return h1e, h2e
+
 
 def hamhub_2d():
     pass
@@ -60,6 +75,7 @@ def hubham_noisy_1d(nsite, U, pbc=True, max_w=1.0):
     noise = (np.random.rand(nsite)*2-1) * max_w
     noise = np.diag(noise)
     return h1e+noise, h2e
+
 
 def hubham_spinless_1d(nsite, V, pbc=True):
     '''
@@ -79,6 +95,7 @@ def hubham_spinless_1d(nsite, V, pbc=True):
         h1e[0, -1] = h1e[-1, 0] = -1.
         h2e[0, 0, -1, -1] = h2e[-1, -1, 0, 0] = V 
     return h1e, h2e
+
 
 def hubham_spinless_noisy_1d(nsite, V, pbc=True, max_w=1.0):
     '''
@@ -114,6 +131,7 @@ def hubbard_mf(nsite, U, spin=0, nelec=None, pbc=True, filling=1.0):
         logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
     
     mol.nelectron = nelec
+    mol.nao = nsite
     h1e, eri = hubham_1d(nsite, U, pbc=pbc)
     
     if spin == 0:

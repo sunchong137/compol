@@ -38,7 +38,7 @@ def rotate_ham(mf):
     bbbb = (Cb,)*4
     aabb = (Ca, Ca, Cb, Cb)
 
-    h1_mo = np.array([Ca.T @ h1e @ Ca, Cb.T @ h1e @ Cb])
+    h1_mo = np.array([Ca.T@h1e@Ca, Cb.T@h1e@Cb])
     h2e_aaaa = ao2mo.incore.general(eri, aaaa, compact=False).reshape(norb, norb, norb, norb)
     h2e_bbbb = ao2mo.incore.general(eri, bbbb, compact=False).reshape(norb, norb, norb, norb)
     h2e_aabb = ao2mo.incore.general(eri, aabb, compact=False).reshape(norb, norb, norb, norb)
