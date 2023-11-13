@@ -62,8 +62,43 @@ def hubham_1d(nsite, U, pbc=True, noisy=False, max_w=1.0, spin=0):
         return h1e, h2e
 
 
-def hamhub_2d():
-    pass
+def hamhub_2d(nx, ny, U, pbc=True):
+    if nx == 1:
+        return hubham_1d(ny, U, pbc)
+    if ny == 1:
+        return hubham_1d(nx, U, pbc)
+
+    nsite = nx * ny
+    h1e = np.zeros((nsite, nsite))
+    for i in range(ny-1):
+        for j in range(nx-1):
+            idx = i*nx + j 
+            idx_r = i*nx + j + 1
+            idx_d = (i+1)*nx + j
+            h1e[idx, idx_r] = h1e[idx_r, idx] = -1
+            h1e[idx, idx_d] = h1e[idx_d, idx] = -1
+
+        h1e[(i+1)*nx-1, (i+2)*nx-1] = h1e[(i+2)*nx-1, (i+1)*nx-1] = -1
+
+    dn = (ny-1) * nx
+    for j in range(nx-1):
+        h1e[dn+j, dn+j+1] = h1e[dn+j+1, dn+j] = -1
+
+
+    eri = np.zeros((nsite, )*4)
+    for i in range(nsite):
+        eri[i,i,i,i] = U
+    if pbc:
+        # down-up
+        for i in range(nx):
+            h1e[i, dn+i] = h1e[dn+i, i] = -1
+            
+        # right-left
+        for j in range(ny):
+            h1e[nx*j, nx*(j+1)-1] = h1e[nx*(j+1)-1, nx*j] = -1
+
+    return h1e, eri
+
 
 def hubham_noisy_1d(nsite, U, pbc=True, max_w=1.0):
     '''

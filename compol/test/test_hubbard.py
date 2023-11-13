@@ -52,6 +52,14 @@ def test_mf_rhf():
     assert np.allclose(e, e_hf)
     assert np.allclose(mo, mo_coeff)
     
+def test_hubbard_2d():
+    nx = 3; ny = 2
+    U = 4
+    h1e, h2e = hubbard.hamhub_2d(nx, ny, U, pbc=True)
+    print(h1e)
+
+test_hubbard_2d()
+
 def test_uhf():
     norb = 18
     U = 8
