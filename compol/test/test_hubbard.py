@@ -56,9 +56,16 @@ def test_hubbard_2d():
     nx = 3; ny = 2
     U = 4
     h1e, h2e = hubbard.hamhub_2d(nx, ny, U, pbc=True)
-    print(h1e)
+    h1e_ref = np.array([
+        [0, -1, -1, -1, 0, 0],
+        [-1, 0, -1, 0, -1, 0],
+        [-1, -1, 0, 0, 0, -1],
+        [-1, 0, 0, 0, -1, -1],
+        [0, -1, 0, -1, 0, -1],
+        [0, 0, -1, -1, -1, 0]
+    ])
+    assert np.allclose(h1e, h1e_ref)
 
-test_hubbard_2d()
 
 def test_uhf():
     norb = 18
