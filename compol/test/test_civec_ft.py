@@ -4,7 +4,7 @@ from compol import ft_civecs
 def test_compol_site():
     norb = 6
     nelec = (3, 3)
-    T = 0.1
+    T = 10
     na = 20
     nb = 20
     len_ci = na*nb
@@ -12,7 +12,8 @@ def test_compol_site():
     H += H.T
     energies, cis = np.linalg.eigh(H)
     z = ft_civecs.ftcompol_fci_site(norb, nelec, T, energies, cis) 
-    print(z)
+
+    print(np.abs(z))
 
 
 test_compol_site()

@@ -92,9 +92,10 @@ def test_compol_prod():
     len_ci = len(ci_strs)
     # len_ci = int(comb(norb, nelec//2))
     # len_ci = int(comb(norb, nelec//2))
-    x0 = norb/2
-    x0=0
-    np.random.seed(0)
+    x0 = 0
+    mo_coeff = np.eye(norb)
+ 
+    # np.random.seed(0)
     ci = np.random.rand(len_ci, len_ci)
     ci = ci + ci.T
     ci /= np.linalg.norm(ci)
@@ -102,7 +103,9 @@ def test_compol_prod():
     # ci[0,0] = 1
     z = civecs.compol_fci_prod(ci, norb, nelec, x0=x0)
     z2 = civecs.compol_fci_site(ci, norb, nelec, x0=x0)
+    z3 = civecs.compol_fci_full(ci, norb, nelec, mo_coeff, x0)
     print(z)
     print(z2)
+    print(z3)
 
 test_compol_prod()
