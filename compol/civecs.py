@@ -53,7 +53,7 @@ def gen_cistr(norb, nelec):
 
 def compol_fci_site(ci, L, nelec, x0=0.0):
     '''
-    Only for RHF.
+    Only for RHF. NOTE: check this.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
     < phi_i |Z| phi_i>, and the others are zero.
     Caution: if the "HF" solution is too far away from the true solution,
