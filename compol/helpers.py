@@ -14,6 +14,7 @@
 
 import numpy as np
 from pyscf import ao2mo
+from pyscf.fci import cistring
 
 def run_stab_mf(mf):
     '''
@@ -64,3 +65,28 @@ def rotate_ham_spinless(mf):
     h2_mo = np.array([h2e_aaaa, h2e_aaaa*0, h2e_aaaa*0])
 
     return h1_mo, h2_mo
+
+def contract_1e_uhf(f1e, fcivec, norb, nelec):
+    if isinstance(nelec, (int, np.integer)):
+        nelecb = nelec//2
+        neleca = nelec - nelecb
+    else:
+        neleca, nelecb = nelec
+    link_indexa = cistring.gen_linkstr_index(range(norb), neleca)
+    link_indexb = cistring.gen_linkstr_index(range(norb), nelecb)
+    na = cistring.num_strings(norb, neleca)
+    nb = cistring.num_strings(norb, nelecb)
+    ci0 = fcivec.reshape(na,nb)
+    t1a = np.zeros((norb,norb,na,nb), dtype=fcivec.dtype)
+    t1b = np.zeros((norb,norb,na,nb), dtype=fcivec.dtype)
+    for str0, tab in enumerate(link_indexa):
+        for a, i, str1, sign in tab:
+            t1a[a,i,str1] += sign * ci0[str0]
+    for str0, tab in enumerate(link_indexb):
+        for a, i, str1, sign in tab:
+            t1b[a,i,:,str1] += sign * ci0[:,str0]
+    fcinew = f1e[0].reshape(-1) @ t1a.reshape(-1,na*nb) + f1e[1].reshape(-1) @ t1b.reshape(-1,na*nb)
+    return fcinew.reshape(fcivec.shape)
+
+def contract_1e_spinless():
+    pass

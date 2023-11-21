@@ -16,10 +16,9 @@ Evaluate the complex polarization given a FCI solution.
 With FCI, one should always use RHF since UHF and RHF give the same answer.
 '''
 import numpy as np
-from pyscf.fci import fci_uhf_slow as fcisolver
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
-from compol import slater_uhf
+from compol import slater_uhf, helpers
 
 Pi = np.pi
 
@@ -131,9 +130,9 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         f1e_up = np.array([f1e, f0])
         f1e_dn = np.array([f0, f1e])
         coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
-        delta = fcisolver.contract_1e(f1e_up, new_vec, norb, nelec) * coeff
+        delta = helpers.contract_1e_uhf(f1e_up, new_vec, norb, nelec) * coeff
         new_vec += delta
-        deltb = fcisolver.contract_1e(f1e_dn, new_vec, norb, nelec) * coeff
+        deltb = helpers.contract_1e_uhf(f1e_dn, new_vec, norb, nelec) * coeff
         new_vec += deltb
 
     Z = np.dot(ci_vec.conj(), new_vec) 
