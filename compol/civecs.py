@@ -122,23 +122,17 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
     '''
     ci_vec = ci.astype(complex)
     new_vec = np.copy(ci_vec)
-    f0 = np.zeros((norb, norb))
-
+    # f0 = np.zeros((norb, norb))
     for site in range(norb):
         f1e = np.zeros((norb, norb))
         f1e[site, site] = 1.0
-        f1e_up = np.array([f1e, f0])
-        f1e_dn = np.array([f0, f1e])
         coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
-        delta = helpers.contract_1e_uhf(f1e_up, new_vec, norb, nelec) * coeff
+        delta = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec, "a") * coeff
         new_vec += delta
-        deltb = helpers.contract_1e_uhf(f1e_dn, new_vec, norb, nelec) * coeff
+        deltb = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec, "b") * coeff
         new_vec += deltb
-
     Z = np.dot(ci_vec.conj(), new_vec) 
-    
     return np.linalg.norm(Z)
-
 
 
 def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):

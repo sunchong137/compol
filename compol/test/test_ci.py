@@ -95,7 +95,7 @@ def test_compol_prod():
     x0 = 0
     mo_coeff = np.eye(norb)
  
-    # np.random.seed(0)
+    np.random.seed(0)
     ci = np.random.rand(len_ci, len_ci)
     ci = ci + ci.T
     ci /= np.linalg.norm(ci)
