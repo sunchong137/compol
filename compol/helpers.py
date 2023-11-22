@@ -66,7 +66,19 @@ def rotate_ham_spinless(mf):
 
     return h1_mo, h2_mo
 
+
 def contract_1e_uhf(f1e, fcivec, norb, nelec):
+    '''
+    Evaluate h|c>, where h is a one-body operator and |c> is a vector.
+    Adapted from PySCF.
+    Args: 
+        f1e: list of 2D arrays, one-body Hamiltonian of spin-up and spin-down separately.
+        fcivec: 1D or 2D array, FCI vector.
+        norb: int, number of orbitals.
+        nelec: int or tuple, number of electrons.
+    Returns:
+        1D or 2D array, a new FCI vector.
+    '''
     if isinstance(nelec, (int, np.integer)):
         nelecb = nelec//2
         neleca = nelec - nelecb
@@ -88,5 +100,46 @@ def contract_1e_uhf(f1e, fcivec, norb, nelec):
     fcinew = f1e[0].reshape(-1) @ t1a.reshape(-1,na*nb) + f1e[1].reshape(-1) @ t1b.reshape(-1,na*nb)
     return fcinew.reshape(fcivec.shape)
 
+
+def contract_1e_onespin(f1e, fcivec, norb, nelec, spin="a"):
+    '''
+    Only apply the one-body operator onto one spin.
+    Args: 
+        f1e: 2D array, one-body Hamiltonian of spin-up OR spin-down.
+        fcivec: 1D or 2D array, FCI vector.
+        norb: int, number of orbitals.
+        nelec: int or tuple, number of electrons.
+    Kwargs:
+        spin: char, "a" - spin-up, "b" - spin down.
+    Returns:
+        1D or 2D array, a new FCI vector.
+    '''
+    if isinstance(nelec, (int, np.integer)):
+        nelecb = nelec//2
+        neleca = nelec - nelecb
+    else:
+        neleca, nelecb = nelec
+    na = cistring.num_strings(norb, neleca)
+    nb = cistring.num_strings(norb, nelecb)
+    ci0 = fcivec.reshape(na,nb)
+    if spin == "a":
+        link_indexa = cistring.gen_linkstr_index(range(norb), neleca)
+        t1a = np.zeros((norb,norb,na,nb), dtype=fcivec.dtype)
+        for str0, tab in enumerate(link_indexa):
+            for a, i, str1, sign in tab:
+                t1a[a,i,str1] += sign * ci0[str0]
+        fcinew = f1e.reshape(-1) @ t1a.reshape(-1,na*nb)
+    elif spin == "b":
+        link_indexb = cistring.gen_linkstr_index(range(norb), nelecb)
+        t1b = np.zeros((norb,norb,na,nb), dtype=fcivec.dtype)
+        for str0, tab in enumerate(link_indexb):
+            for a, i, str1, sign in tab:
+                t1b[a,i,:,str1] += sign * ci0[:,str0]
+        fcinew = f1e.reshape(-1) @ t1b.reshape(-1,na*nb)
+    else:
+        raise ValueError("spin can only be 'a' or 'b'!")
+    return fcinew.reshape(fcivec.shape)
+
 def contract_1e_spinless():
+    # TODO
     pass
