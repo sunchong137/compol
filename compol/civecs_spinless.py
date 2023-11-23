@@ -16,10 +16,7 @@ Evaluate the complex polarization given a FCI solution.
 With FCI, one should always use RHF since UHF and RHF give the same answer.
 '''
 import numpy as np
-from pyscf.fci import direct_uhf as fcisolver
-from pyscf.fci import cistring 
-from pyscf.lib import numpy_helper
-from compol import slater_spinless, civecs
+from compol import slater_spinless, civecs, helpers
 
 Pi = np.pi
 
@@ -59,7 +56,18 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
 
 
 def compol_fci_prod(ci, norb, nelec, x0=0.):
-    raise ValueError("Not implemented!")
+    
+    nelec_spinless = (nelec, 0)
+    ci_vec = ci.astype(complex)
+    new_vec = np.copy(ci_vec)
+    for site in range(norb):
+        f1e = np.zeros((norb, norb))
+        f1e[site, site] = 1.0
+        coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
+        delta = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec_spinless, "a") * coeff
+        new_vec += delta
+    Z = np.dot(ci_vec.conj(), new_vec) 
+    return np.linalg.norm(Z)
 
 
 def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
