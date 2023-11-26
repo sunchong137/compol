@@ -18,7 +18,7 @@ Evaluate complex polarization based on Slater determinants.
 '''
 
 import numpy as np 
-from compol import slater_uhf
+from compol import slater
 
 Pi = np.pi
 
@@ -26,7 +26,7 @@ def gen_zmat_site(L, x0):
     '''
     Generate the Z operator in the site basis for MO coeffs.
     '''
-    return slater_uhf.gen_zmat_site(L, x0)
+    return slater.gen_zmat_site(L, x0)
 
 def gen_det(mo_coeff, occ):
     '''
@@ -82,4 +82,4 @@ def det_z_det(L, sdet, x0=0.0):
     Returns:
         A complex number
     '''
-    return slater_uhf.det_z_det(L, sdet, x0)
+    return slater.det_z_det(L, sdet, x0)

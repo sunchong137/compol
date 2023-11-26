@@ -20,7 +20,7 @@ import numpy as np
 from pyscf.fci import fci_slow as fcisolver
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
-from compol import slater_uhf, civecs
+from compol import slater, civecs
 
 Pi = np.pi
 
@@ -49,7 +49,7 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
         return civecs.compol_fci_site(cis[:, 0], norb, nelec, x0=x0)
     
     # define complex polarization
-    Z = slater_uhf.gen_zmat_site(norb, x0)
+    Z = slater.gen_zmat_site(norb, x0)
 
     # define site basis orbitals. 
     bra_mo = np.eye(norb)
@@ -78,9 +78,9 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
             occ_u = ci_strs_up[up]
             occ_d = ci_strs_dn[dn]
             
-            bra = slater_uhf.gen_det(bra_mo, [occ_u, occ_d])
-            ket = slater_uhf.gen_det(ket_mo, [occ_u, occ_d])
-            Z_vals[up, dn] = slater_uhf.ovlp_det(bra, ket)
+            bra = slater.gen_det(bra_mo, [occ_u, occ_d])
+            ket = slater.gen_det(ket_mo, [occ_u, occ_d])
+            Z_vals[up, dn] = slater.ovlp_det(bra, ket)
 
     Z_vals = Z_vals.ravel()
     # canonical ensemble
