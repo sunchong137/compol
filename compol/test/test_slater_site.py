@@ -70,5 +70,3 @@ def test_gen_det():
     assert np.allclose(ref[0], det[0])
     assert np.allclose(ref[1], det[1])
 
-test_gen_det()
-

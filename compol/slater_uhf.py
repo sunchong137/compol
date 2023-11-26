@@ -21,18 +21,28 @@ import numpy as np
 
 Pi = np.pi
 
+def gen_zvec_site(L, x0):
+    '''
+    Since Z is diagonal, return only the diagonal to save space. 
+    '''
+    pos = np.arange(L) + x0 
+    Z = np.exp(2.j * Pi * pos / L)
+    return Z
+
+
 def gen_zmat_site(L, x0):
     '''
     Generate the Z operator in the site basis for MO coeffs.
     '''
-    pos = np.arange(L) + x0 
-    Z = np.exp(2.j * Pi * pos / L)
-    Z = np.diag(Z)
-    return Z
+    return np.diag(gen_zvec_site(L, x0))
+
 
 def gen_det(mo_coeff, occ):
     '''
     Given the occupations (occ), generate the Slater determinant from the MO coefficients.
+    Args:
+        mo_coeff: 2D or 3D array of the MO coefficients.
+        occ: 1D or 2D array of elements 0 or 1, the occupation of each MO.
     '''
     occ = np.asarray(occ)
     try:
@@ -42,8 +52,8 @@ def gen_det(mo_coeff, occ):
     if ndim > 2: # UHF
         idx_up = np.nonzero(occ[0])[0]
         idx_dn = np.nonzero(occ[1])[0]
-        det_up = np.copy(mo_coeff[0][:, idx_up])
-        det_dn = np.copy(mo_coeff[1][:, idx_dn])
+        det_up = mo_coeff[0][:, idx_up]
+        det_dn = mo_coeff[1][:, idx_dn]
         dets = [det_up, det_dn] # not array because shapes of up and dn can be diff
     else: # RHF
         idx = np.nonzero(occ)[0]
