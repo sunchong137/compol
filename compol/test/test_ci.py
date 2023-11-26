@@ -85,9 +85,9 @@ def test_compare_full_site():
 
 def test_compol_prod():
 
-    norb = 4
+    norb = 6
     # nelec = 4
-    nelec = (2, 2)
+    nelec = (3, 3)
     ci_strs = civecs.gen_cistr(norb, nelec[0])
     len_ci = len(ci_strs)
     # len_ci = int(comb(norb, nelec//2))
@@ -101,7 +101,16 @@ def test_compol_prod():
     ci /= np.linalg.norm(ci)
     # ci = np.zeros_like(ci)
     # ci[0,0] = 1
-    z = civecs.compol_fci_prod(ci, norb, nelec, x0=x0)
+    t1 = time.time()
+    z1 = civecs.compol_fci_prod(ci, norb, nelec, x0=x0)
+    t2 = time.time()
     z2 = civecs.compol_fci_site(ci, norb, nelec, x0=x0)
+    t3 = time.time()
     z3 = civecs.compol_fci_full(ci, norb, nelec, mo_coeff, x0)
-    assert np.allclose(z, z2, z3)
+    t4 = time.time() 
+    print(t2-t1, t3-t2, t4-t3)
+    assert np.allclose(z1, z2)
+    assert np.allclose(z2, z3)
+
+
+test_compol_prod()
