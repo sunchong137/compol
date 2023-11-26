@@ -93,7 +93,7 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
             coeff = ci[up, dn]*ci[up, dn].conj()
             z_val += _z * coeff
 
-    return np.linalg.norm(z_val)
+    return z_val #np.linalg.norm(z_val)
 
 
 def compol_fci_prod(ci, norb, nelec, x0=0.):
@@ -126,7 +126,7 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         new_vec += deltb
 
     Z = np.dot(ci_vec.ravel().conj(), new_vec.ravel()) 
-    return np.linalg.norm(Z)
+    return Z #np.linalg.norm(Z)
 
 
 def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
@@ -195,4 +195,4 @@ def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
                     #     assert np.linalg.norm(z)<1e-10
                     z_val +=  z * coeff 
                                                   
-    return np.linalg.norm(z_val)
+    return z_val #np.linalg.norm(z_val)

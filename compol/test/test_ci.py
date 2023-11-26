@@ -104,8 +104,4 @@ def test_compol_prod():
     z = civecs.compol_fci_prod(ci, norb, nelec, x0=x0)
     z2 = civecs.compol_fci_site(ci, norb, nelec, x0=x0)
     z3 = civecs.compol_fci_full(ci, norb, nelec, mo_coeff, x0)
-    print(z)
-    print(z2)
-    print(z3)
-
-test_compol_prod()
+    assert np.allclose(z, z2, z3)
