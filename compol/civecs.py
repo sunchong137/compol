@@ -69,13 +69,6 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
     Z = slater.gen_zmat_site(L, x0)
     zvec = np.diag(Z)
 
-    # # define site basis orbitals. 
-    # bra_mo = np.eye(L)
-    # ket_mo = np.dot(Z, bra_mo)
-
-    # bra_mo = np.array([bra_mo, bra_mo])
-    # ket_mo = np.array([ket_mo, ket_mo])
-
     try:
         neleca = nelec[0] # nelec as tuple
         ne = nelec
@@ -96,10 +89,6 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
             occ_d = ci_strs_dn[dn]
             idx_up = np.nonzero(occ_u)[0]
             idx_dn = np.nonzero(occ_d)[0]
-            # bra = slater.gen_det(bra_mo, [occ_u, occ_d])
-            # ket = slater.gen_det(ket_mo, [occ_u, occ_d])
-            # _z = slater.ovlp_det(bra, ket)
-            # print(zvec[idx_up])
             _z = np.prod(zvec[idx_up])*np.prod(zvec[idx_dn])
             coeff = ci[up, dn]*ci[up, dn].conj()
             z_val += _z * coeff
@@ -135,7 +124,8 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         new_vec += delta
         deltb = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec, "b") * coeff
         new_vec += deltb
-    Z = np.dot(ci_vec.conj(), new_vec) 
+
+    Z = np.dot(ci_vec.ravel().conj(), new_vec.ravel()) 
     return np.linalg.norm(Z)
 
 
