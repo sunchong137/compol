@@ -39,7 +39,7 @@ def test_get_z():
     L = 6
     nocc = 3
     mo1 = np.random.rand(2, L, nocc)
-    Z = slater.det_z_det(L, mo1)
+    Z = slater.det_z_det(L, mo1)/slater.ovlp_det(mo1, mo1)
     print(Z)
 
 def test_gen_det():

@@ -52,26 +52,29 @@ def gen_cistr(norb, nelec):
 
 def compol_fci_site(ci, L, nelec, x0=0.0):
     '''
-    Only for RHF. NOTE: check this.
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
     < phi_i |Z| phi_i>, and the others are zero.
     Caution: if the "HF" solution is too far away from the true solution,
              then FCI might not converge.
     Args:
-        L: number of orbitals
-        civec: FCI coefficients
+        ci: 2D array of size (na, nb), FCI coefficients
+        L: int, number of sites/orbitals
+        nelec: int or tuple, number of electrons
+    Kwargs:
+        x0: float, the origin.
     Returns
         float
     '''
     # define complex polarization
     Z = slater.gen_zmat_site(L, x0)
+    zvec = np.diag(Z)
 
-    # define site basis orbitals. 
-    bra_mo = np.eye(L)
-    ket_mo = np.dot(Z, bra_mo)
+    # # define site basis orbitals. 
+    # bra_mo = np.eye(L)
+    # ket_mo = np.dot(Z, bra_mo)
 
-    bra_mo = np.array([bra_mo, bra_mo])
-    ket_mo = np.array([ket_mo, ket_mo])
+    # bra_mo = np.array([bra_mo, bra_mo])
+    # ket_mo = np.array([ket_mo, ket_mo])
 
     try:
         neleca = nelec[0] # nelec as tuple
@@ -85,22 +88,23 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
     ci_strs_dn = gen_cistr(L, ne[1])
 
     # choose the MOs
-    Z = 0.j
+    z_val = 0.j
     len_u, len_d = ci.shape
     for up in range(len_u):
         for dn in range(len_d):
             occ_u = ci_strs_up[up]
             occ_d = ci_strs_dn[dn]
-            
-            bra = slater.gen_det(bra_mo, [occ_u, occ_d])
-            ket = slater.gen_det(ket_mo, [occ_u, occ_d])
-            _z = slater.ovlp_det(bra, ket)
-
+            idx_up = np.nonzero(occ_u)[0]
+            idx_dn = np.nonzero(occ_d)[0]
+            # bra = slater.gen_det(bra_mo, [occ_u, occ_d])
+            # ket = slater.gen_det(ket_mo, [occ_u, occ_d])
+            # _z = slater.ovlp_det(bra, ket)
+            # print(zvec[idx_up])
+            _z = np.prod(zvec[idx_up])*np.prod(zvec[idx_dn])
             coeff = ci[up, dn]*ci[up, dn].conj()
-            # print(up, dn, up, dn, _z, coeff)
-            Z += _z * coeff
+            z_val += _z * coeff
 
-    return np.linalg.norm(Z)
+    return np.linalg.norm(z_val)
 
 
 def compol_fci_prod(ci, norb, nelec, x0=0.):

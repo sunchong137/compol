@@ -119,9 +119,9 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     return ovlp
 
 
-def det_z_det(L, sdet, x0=0.0):
+def det_z_det(L, sdet, x0=0.0, normalize=False):
     '''
-    Evaluate <det | Z | det> / <det | det>
+    Evaluate <det | Z | det> 
     Args:
         L: int, number of sites
         sdet: 2D or 3D array, MO coefficients of the Slater determinant.
@@ -131,5 +131,7 @@ def det_z_det(L, sdet, x0=0.0):
         A complex number
     '''
     sdet2 = z_sdet(L, sdet, x0=x0)
-    Z = ovlp_det(sdet, sdet2) / ovlp_det(sdet, sdet)
+    Z = ovlp_det(sdet, sdet2) 
+    if normalize:
+        Z /= ovlp_det(sdet, sdet)
     return Z
