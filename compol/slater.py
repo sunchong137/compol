@@ -21,20 +21,13 @@ import numpy as np
 
 Pi = np.pi
 
-def gen_zvec_site(L, x0):
+def gen_zmat_site(L, x0):
     '''
-    Since Z is diagonal, return only the diagonal to save space. 
+    Generate the matrix for Z operator in the site basis for MO coeffs.
     '''
     pos = np.arange(L) + x0 
     Z = np.exp(2.j * Pi * pos / L)
-    return Z
-
-
-def gen_zmat_site(L, x0):
-    '''
-    Generate the Z operator in the site basis for MO coeffs.
-    '''
-    return np.diag(gen_zvec_site(L, x0))
+    return np.diag(Z)
 
 
 def gen_det(mo_coeff, occ):
@@ -60,6 +53,7 @@ def gen_det(mo_coeff, occ):
         dets = np.copy(mo_coeff[:, idx])#.reshape(norb, nocc)
     return dets
 
+
 def z_sdet(L, sdet, x0=0.0):
     '''
     Applies complex polarzation Z onto a Slater determinant represented
@@ -80,13 +74,15 @@ def z_sdet(L, sdet, x0=0.0):
         ndim = 3
 
     Z = gen_zmat_site(L, x0)
+
     if ndim == 2: # RHF
-        mo_new = np.dot(Z, sdet)
+        mo_new = Z @ sdet
     elif ndim == 3:
-        mo_new = np.array([np.dot(Z, sdet[0]), np.dot(Z, sdet[1])])
+        mo_new = np.array([Z @ sdet[0], Z @ sdet[1]])
     else:
         raise ValueError("The MO coefficient matrix is an array.")
     return mo_new
+
 
 def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     '''
@@ -106,7 +102,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
         
     if ao_ovlp is None:
         if ndim == 2:
-            ovlp = np.linalg.det(np.dot(sdet1.T.conj(), sdet2))
+            ovlp = np.linalg.det(sdet1.T.conj() @ sdet2)
             ovlp = ovlp ** 2
         elif ndim == 3:
             ovlp1 = np.linalg.det(sdet1[0].T.conj() @ sdet2[0])
@@ -120,12 +116,17 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
             ovlp1 = np.linalg.det(sdet1[0].T.conj() @ ao_ovlp @ sdet2[0])
             ovlp2 = np.linalg.det(sdet1[1].T.conj() @ ao_ovlp @ sdet2[1])
             ovlp = ovlp1 * ovlp2 
-
     return ovlp
+
 
 def det_z_det(L, sdet, x0=0.0):
     '''
     Evaluate <det | Z | det> / <det | det>
+    Args:
+        L: int, number of sites
+        sdet: 2D or 3D array, MO coefficients of the Slater determinant.
+    Kwargs:
+        x0: float, origin
     Returns:
         A complex number
     '''
