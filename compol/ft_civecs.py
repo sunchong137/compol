@@ -18,6 +18,7 @@ With FCI, one should always use RHF since UHF and RHF give the same answer.
 import numpy as np
 # from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import fci_slow as fcisolver
+from pyscf.fci import direct_spin1
 from pyscf.fci import cistring 
 from pyscf.lib import numpy_helper
 from compol import slater, civecs
@@ -90,3 +91,12 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
 
     return top/bot
 
+
+def ftfci_canonical(h1e, h2e, norb, nelec, npoint=1e5):
+    '''
+    Finite temperature FCI under canonical ensemble.
+    '''
+    # get the Hamiltonian matrix
+    H_fci = direct_spin1.pspace(h1e, h2e, norb, nelec, np=npoint)[1]
+    energies, civecs = np.linalg.eigh(H_fci) 
+    return energies, civecs
