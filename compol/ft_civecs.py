@@ -16,6 +16,7 @@ Evaluate the complex polarization given a FCI solution.
 With FCI, one should always use RHF since UHF and RHF give the same answer.
 '''
 import numpy as np
+from scipy import special
 # from pyscf.fci import direct_uhf as fcisolver
 from pyscf.fci import fci_slow as fcisolver
 from pyscf.fci import direct_spin1
@@ -92,11 +93,60 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
     return top/bot
 
 
-def ftfci_canonical(h1e, h2e, norb, nelec, npoint=1e5):
+def ftfci_canonical(h1e, eri, norb, nelec):
     '''
     Finite temperature FCI under canonical ensemble.
     '''
     # get the Hamiltonian matrix
-    H_fci = direct_spin1.pspace(h1e, h2e, norb, nelec, np=npoint)[1]
+    H_fci = fci_ham_pspace(h1e, eri, norb, nelec)
     energies, civecs = np.linalg.eigh(H_fci) 
     return energies, civecs
+
+def fci_ham_pspace(h1e, eri, norb, nelec, max_np=1e4):
+    '''
+    Construct the full Hamiltonian using the pspace method.
+    maximum: 8 orbitals.
+    '''
+    # get the Hamiltonian matrix
+    try:
+        neleca, nelecb = nelec 
+    except:
+        neleca = nelec//2
+        nelecb = nelec - neleca 
+
+    num_np = int(special.comb(norb, neleca) * special.comb(norb, nelecb) + 1e-5)
+    if num_np > max_np:
+        print(f"Warning: Exceeded memeory. P space is truncated to {max_np} points.")
+        num_np = max_np    
+    H_fci = direct_spin1.pspace(h1e, eri, norb, nelec, np=num_np)[1]
+    return H_fci 
+
+def fci_ham_direct(h1e, eri, norb, nelec):
+    '''
+    Construct the FCI Hamiltonian directly.
+    maximum: 8 orbitals.
+    NOTE: much slower.
+    '''
+    try:
+        neleca, nelecb = nelec
+    except:
+        neleca = nelec//2
+        nelecb = nelec - neleca 
+    nsa = int(special.comb(norb, neleca) + 1e-5)
+    nsb = int(special.comb(norb, nelecb) + 1e-5) 
+    len_ci = nsa * nsb
+
+    base_mat = np.eye(len_ci)
+    h2e = direct_spin1.absorb_h1e(h1e, eri, norb, nelec, 0.5)
+
+    def hop(c):
+        hc = direct_spin1.contract_2e(h2e, c, norb, nelec)
+        return hc.reshape(-1)
+
+    hmat = np.zeros_like(base_mat)
+    for i in range(len_ci):
+        hmat[:, i] = hop(base_mat[i])
+
+    return hmat
+
+

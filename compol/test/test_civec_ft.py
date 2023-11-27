@@ -1,6 +1,7 @@
 import numpy as np
 from compol import ft_civecs, hubbard 
 import scipy
+import time
 
 def test_compol_site():
     norb = 6
@@ -17,16 +18,20 @@ def test_compol_site():
     print(np.abs(z))
 
 
-def test_solver():
-    nsite = 8
+def test_hmat():
+    nsite = 6
     nelec = nsite
     len_ci = int(scipy.special.comb(nsite, nelec//2)**2)
     U = 0
     pbc = True
     h1e, eri = hubbard.hubham_1d(nsite, U, pbc)
-    e, v = ft_civecs.ftfci_canonical(h1e, eri, nsite, nelec, npoint=len_ci)
-    print(len(e))
-    print(len_ci)
+    t1 = time.time()
+    h = ft_civecs.fci_ham_pspace(h1e, eri, nsite, nelec, max_np=1e4)
+    t2 = time.time()
+    h2 = ft_civecs.fci_ham_direct(h1e, eri, nsite, nelec)
+    t3 = time.time()
+    print(t2-t1, t3-t2)
+    assert np.allclose(h, h2)
 
 
-test_solver()
+test_hmat()
