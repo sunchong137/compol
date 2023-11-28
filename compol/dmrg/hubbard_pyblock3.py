@@ -1,14 +1,45 @@
+# Copyright 2023 ComPol developers. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 from pyblock3.hamiltonian import Hamiltonian
 from pyblock3.fcidump import FCIDUMP
 from pyblock3.algebra.mpe import MPE
 
+Pi = np.pi
 
 def hubbard1d_dmrg(nsite, U, nelec=None, filling=1.0, pbc=False,
                    init_bdim=50, max_bdim=200, nsweeps=8, cutoff=1e-8,
                    max_noise=1e-5):
     '''
     Run DMRG on the 1D Hubbard model.
+    Args:
+        nsite: int, number of sites.
+        U: float, on-site Coulomb interaction amplitude, unit: hopping amplitude t.
+    Kwargs:
+        nelec: int or tuple, if None, derived from filling.
+        filling: float, nelec/nsite. filling=1 means half-filling.
+        pbc: bool, if True, hopping between the first and last sites are included in the Hamiltonian.
+        init_bdim: int, initial bond dimension.
+        max_bdim: int, maximum bond dimension.
+        nsweeps: int, number of DMRG sweep.
+        cutoff: float, SVD singular value cutoff.
+        max_noise: float, starting noise, decay to 0.
+    Returns:
+        energy: float, the DMRG ground state energy.
+        mps: the DMRG ground state MPS.
+        mpo: the Hamiltonian
     '''
     if nelec is None:
         nelec = int(nsite * filling + 1e-10)
@@ -53,23 +84,35 @@ def hubbard1d_dmrg(nsite, U, nelec=None, filling=1.0, pbc=False,
     dmrg = MPE(mps, ham_mpo, mps).dmrg(bdims=bdims, noises=noises, dav_thrds=None, iprint=1, n_sweeps=nsweeps)
     energy = dmrg.energies[-1]
     print("Total energy: {:2.6f}; Energy per site: {:2.6f}".format(energy, energy/nsite))
-    
     return energy, mps, ham_mpo
 
 
+def spinless_dmrg():
+    pass 
 
-# # build a random MPO
-# def build_nn_mpo(nsite, nelec, cutoff=1e-9):
-#     fcidump = FCIDUMP(pg='c1', n_sites=nsite, n_elec=nelec, twos=0, ipg=0, orb_sym=[0] * nsite)
-#     hamil = Hamiltonian(fcidump, flat=True)
+def compol_prod(mps, nsite, nelec, x0=0.0, max_bdim=400, cutoff=1e-8, tol=1e-8):
 
-#     def generate_terms(nsites, c, d):
-#         yield c[0, 0] * d[0, 0]
-#     return hamil, hamil.build_mpo(generate_terms, cutoff=cutoff).to_sparse()
+    ket_mps = np.copy(mps)
+    fcidump = FCIDUMP(pg='c1', n_sites=nsite, n_elec=nelec, twos=0, ipg=0, orb_sym=[0] * nsite)
+    operator = Hamiltonian(fcidump, flat=True)
+    for site in range(nsite):
+        coeff = np.exp(2.j*Pi*(site-x0)/nsite)-1.0
+        # spin up
+        def generate_terms(nsites, c, d): # up term
+            yield c[site, 0] * d[site, 0]
+        mpo = operator.build_mpo(generate_terms, cutoff=cutoff).to_sparse()
+        ket_mps += mpo @ ket_mps * coeff    
+        ket_mps, c_err = ket_mps.compress(max_bond_dim=max_bdim, cutoff=cutoff)
+        if c_err > tol:
+            print("WARNING: compression error is {:0.4E}, greater than {:0.4E}".format(c_err, tol))
+        # spin-down
+        def generate_terms(nsites, c, d): # up term
+            yield c[site, 1] * d[site, 1]
+        mpo = operator.build_mpo(generate_terms, cutoff=cutoff).to_sparse()
+        ket_mps += mpo @ ket_mps * coeff
+        ket_mps, c_err = ket_mps.compress(max_bond_dim=max_bdim, cutoff=cutoff)
+        if c_err > tol:
+            print("WARNING: compression error is {:0.4E}, greater than {:0.4E}".format(c_err, tol))
 
-# nn, nn_mpo = build_nn_mpo(nsite, nsite)
-
-# nmps = nn_mpo @ mps
-
-# n = np.dot(nmps, mps)
-# print(n)
+    Z = np.dot(mps.conj(), ket_mps)
+    return Z #np.linalg.norm(Z)
