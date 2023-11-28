@@ -5,10 +5,10 @@ from pyblock2.driver.core import DMRGDriver, SymmetryTypes
 
 # set system
 t = -1
-nsite = 6
+nsite = 20
 nelec = nsite
 U = 4
-pbc = False
+pbc = True
 spin = 0 # n_up - n_dn
 
 driver = DMRGDriver(scratch="./tmp", symm_type=SymmetryTypes.SZ, n_threads=4)
@@ -28,9 +28,9 @@ ham_str.add_term("cdCD", np.array([[i, ] * 4 for i in range(nsite)]).flatten(), 
 ham_mpo = driver.get_mpo(ham_str.finalize(), iprint=0)
 
 # run DMRG
-def run_dmrg(driver, mpo, init_bond_dim=100, nroots=1):
+def run_dmrg(driver, mpo, init_bond_dim=150, nroots=1):
     ket = driver.get_random_mps(tag="KET", bond_dim=init_bond_dim, nroots=nroots)
-    bond_dims = [100] * 4 + [100] * 4 # schedule
+    bond_dims = [150] * 4 + [250] * 4 # schedule
     noises = [1e-4] * 4 + [1e-5] * 4 + [0]
     thrds = [1e-10] * 8
     return driver.dmrg(mpo, ket, n_sweeps=20, bond_dims=bond_dims, noises=noises,

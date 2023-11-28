@@ -29,16 +29,26 @@ def build_hubbard_mpo(nsite, nelec, U, t=-1, pbc=False, cutoff=1E-9):
 
 hamil, ham_mpo = build_hubbard_mpo(nsite, nsite, U)
 
-print("start")
 # constrruct initial MPS
 bond_dim = 100
 mps = hamil.build_mps(bond_dim)
 # print(np.dot(mps, ham_mpo @ mps))
-print("MPS = ", mps.show_bond_dims())
-mps = mps.canonicalize(center=0)
-mps /= mps.norm()
-print("MPS = ", mps.show_bond_dims())
-# print(np.dot(mps, ham_mpo @ mps))
 dmrg = MPE(mps, ham_mpo, mps).dmrg(bdims=[bond_dim], noises=[1E-6, 0], dav_thrds=[1E-3], iprint=2, n_sweeps=10)
 ener = dmrg.energies[-1]
 print(ener/nsite)
+
+# build a random MPO
+def build_nn_mpo(nsite, nelec, cutoff=1e-9):
+    fcidump = FCIDUMP(pg='c1', n_sites=nsite, n_elec=nelec, twos=0, ipg=0, orb_sym=[0] * nsite)
+    hamil = Hamiltonian(fcidump, flat=True)
+
+    def generate_terms(nsites, c, d):
+        yield c[0, 0] * d[0, 0]
+    return hamil, hamil.build_mpo(generate_terms, cutoff=cutoff).to_sparse()
+
+nn, nn_mpo = build_nn_mpo(nsite, nsite)
+
+nmps = nn_mpo @ mps
+
+n = np.dot(nmps, mps)
+print(n)
