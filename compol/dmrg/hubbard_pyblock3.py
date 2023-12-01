@@ -45,7 +45,10 @@ def hubbard1d_dmrg(nsite, U, nelec=None, filling=1.0, pbc=False,
         nelec = int(nsite * filling + 1e-10)
         if abs(nelec/nsite - filling) > 1e-5:
             print("WARNING: The filling is changed to {:1.2f}".format(nelec/nsite))
-        spin = 0
+        if nelec % 2 == 0:
+            spin = 0
+        else:
+            spin = 1
     else:
         try:
             neleca, nelecb = nelec
@@ -91,6 +94,11 @@ def spinless_dmrg():
     pass 
 
 def compol_prod(mps, nsite, nelec, x0=0.0, max_bdim=400, cutoff=1e-8, tol=1e-8):
+    '''
+    Evaluate <MPS | exp(i2pi/L * \sum_p p * n_p) |MPS>
+    Note that exp(i2pi/L * \sum_p p * n_p) = \prod_p (1 + (exp(i2pi/L * p)n_p)),
+    we apply (1 + (exp(i2pi/L * p)n_p)) onto MPS repeatedly.
+    '''
 
     ket_mps = np.copy(mps)
     fcidump = FCIDUMP(pg='c1', n_sites=nsite, n_elec=nelec, twos=0, ipg=0, orb_sym=[0] * nsite)
