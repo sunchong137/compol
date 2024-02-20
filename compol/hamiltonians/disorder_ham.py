@@ -12,6 +12,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy as np
+import logging
+from pyscf import gto, scf, ao2mo, fci
+
+class spinless1d(object):
+    '''
+    Represents a one-dimensional spinless Hamiltonian with diagonal disorder.
+    The Hamiltonian is given by:
+    ```math
+    H = -\sum_{\langle i, j\rangle} (a^\dagger_i a_j + h.c.)
+        -t^' \sum_{\llangle i, j\rrangle} (a^\dagger_i a_j + h.c.)
+        + \sum_i w_i a^\dagger_i a_i 
+        + V\sum_{\langle i, j\rangle} n_i n_j
+    '''
+    def __init__(self, nsite, V, W=1, tprime=0, pbc=False, distrib="box", 
+                 nelec=None, filling=0.5):
+        '''
+        Initializes the Spinless1D class.
+        Args:
+            nsite (int): Number of sites.
+            V (float): Nearest-neighbor two-body interaction strength.
+
+        Kwargs:
+            W (float): Width of the distribution.
+            tprime (float): Next-nearest-neighbor hopping amplitude.
+            pbc (bool): If True, periodic boundary condition is used.
+            distrib (str): Distribution type, can be "box" or "gaussian".
+            nelec (int): Number of electrons.
+            filling (float): Electron filling fraction (nelec / nsite). Used only when nelec is not provided.
+        '''
+        self.nsite = nsite 
+        self.V = V
+        self.W = W 
+        self.tprime = tprime
+        self.pbc = pbc 
+        self.distrib = distrib
+        if nelec is None:
+            nelec = int(nsite * filling + 1e-6) 
+            f = nelec/nsite
+            if abs(filling - nelec/nsite) > 1e-15:
+                logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer electron count!".format(filling, f))
+        self.nelec = nelec
+
+    def print_info(self):
+        print("###############################################")
+        print("1D spinless Hamiltonian with diagonal disorder.")
+        print("###############################################")
+        print(" L = {:d}  |  Nelec = {:d}  |  V = {:0.2f}  ".format(self.nsite, self.nelec, self.V))
+        print(" tprime = {:0.2f}  |  pbc = {}".format(self.tprime, self.pbc))
+        print(" Disorder info:")
+        print(" Distribution = {} | Width = {:0.2f}".format(self.distrib, self.W))
+        print("###############################################")
+
+    def gen_ham(self):
+        """
+        Generate the one-body and two-body Hamiltonian.
+        """
+        h1e = np.zeros((self.nsite, self.nsite))
+        h2e = np.zeros((self.nsite,) * 4)
+
+        # create noise
+        if self.distrib == "box":
+            noise = np.random.uniform(-self.W, self.W, self.nsite)
+        elif self.distrib == "gaussian":
+            noise = np.random.normal(0, self.W, self.nsite)
+        else:
+            raise ValueError("Distributions can only be 'box' or 'gaussian'!")
+
+        # 1-body term
+        for i in range(self.nsite - 2):
+            h1e[i, i+1] = h1e[i+1, i] = -1.
+            h1e[i, i+2] = h1e[i+2, i] = self.tprime
+        h1e[-2, -1] = h1e[-1, -2] = -1.
+        h1e += np.diag(noise)
+
+        # 2-body term
+        for i in range(self.nsite - 1):
+            h2e[i, i, i+1, i+1] = h2e[i+1, i+1, i, i] = self.V / 2.  # making h2e symmetric
+
+        if self.pbc:
+            h1e[0, -1] = h1e[-1, 0] = -1.
+            h1e[0, -2] = h1e[-2, 0] = self.tprime
+            h2e[0, -1] = h2e[-1, 0] = self.V / 2.
+        return h1e, h2e
+
 
 def ham_disorder_1d(nsite, V, W=1, tprime=0, pbc=False, dist="box"):
     '''
@@ -52,8 +136,33 @@ def ham_disorder_1d(nsite, V, W=1, tprime=0, pbc=False, dist="box"):
     
     return h1e, h2e 
 
-def mf_disorder():
+
+def mf_disorder(nsite, V, W=1, tprime=0, pbc=False, dist="box", 
+                filling=1.0, nelec=None, mf_tol=1e-10, mf_niter=100):
     '''
     Generate the pyscf meanfield object 
     '''
-    pass
+    mol = gto.M()
+    
+    if nelec is None:
+        filling /= 2 # spinless 
+        nelec = int(nsite * filling + 1e-10)
+        if abs(nelec - nsite * filling) > 1e-2:
+            logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
+    
+
+    mol.nelectron = nelec
+    mol.nao = nsite
+    mol.spin = nelec
+    h1e, eri = ham_disorder_1d(nsite, V, W=W, tprime=tprime, pbc=pbc, dist=dist)
+    
+    mf = scf.UHF(mol)
+    mf.get_hcore = lambda *args: h1e 
+    mf.get_ovlp = lambda *args: np.eye(nsite)
+    mf._eri = ao2mo.restore(8, eri, nsite)
+    mol.incore_anyway = True
+    mf.conv_tol = mf_tol
+    mf.max_cycle = mf_niter
+    mf.kernel()
+    return mf
+

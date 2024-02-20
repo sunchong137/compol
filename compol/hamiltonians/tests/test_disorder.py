@@ -26,4 +26,15 @@ def test_ham():
     h1e, h2e = disorder_ham.ham_disorder_1d(nsite, V, W, tprime, pbc=pbc, dist='box')
     print(h2e)
 
-test_ham()
+def test_mf():
+    nsite = 6
+    V = 1 
+    tprime = -2
+    W = 3 
+    pbc = False
+    filling=1.0
+
+    mf = disorder_ham.mf_disorder(nsite, V, W, tprime, pbc=pbc, dist='box', filling=filling)
+    print(mf.e_tot)
+
+test_mf()
