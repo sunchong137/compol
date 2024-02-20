@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import numpy as np
-from compol import hamiltonians, helpers
+from compol import helpers
+from compol.hamiltonians import hubbard
 from pyscf import gto, scf, ao2mo, fci
 
 def test_mf_rhf():
     norb = 6
     U = 4
     spin = 0
-    mymf = hamiltonians.hubbard_mf(norb, U, spin=spin)
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin)
     e = mymf.energy_elec()[0]
     mo = mymf.mo_coeff 
 
@@ -55,7 +56,7 @@ def test_mf_rhf():
 def test_hubbard_2d():
     nx = 3; ny = 2
     U = 4
-    h1e, h2e = hamiltonians.hamhub_2d(nx, ny, U, pbc=True)
+    h1e, h2e = hubbard.hamhub_2d(nx, ny, U, pbc=True)
     h1e_ref = np.array([
         [0, -1, -1, -1, 0, 0],
         [-1, 0, -1, 0, -1, 0],
@@ -71,7 +72,7 @@ def test_uhf():
     norb = 18
     U = 8
     spin = 1
-    mymf = hamiltonians.hubbard_mf(norb, U, spin=spin)
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin)
     e = mymf.energy_elec()[0]
     mo = mymf.mo_coeff 
 
@@ -107,10 +108,10 @@ def test_fci():
     pbc = True
     spin = 0
     # t1 = time.time()
-    mymf = hamiltonians.hubbard_mf(norb, U, spin=spin, pbc=pbc)
-    e_fci, ci = hamiltonians.hubbard_fci_from_mf(mymf)
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin, pbc=pbc)
+    e_fci, ci = hubbard.hubbard_fci_from_mf(mymf)
     # t2 = time.time()
-    e_fci2, ci2 = hamiltonians.hubbard_fci(norb, U, pbc=pbc)
+    e_fci2, ci2 = hubbard.hubbard_fci(norb, U, pbc=pbc)
     # t3 = time.time()
     assert np.allclose(e_fci, e_fci2)
     # print(t2-t1, t3-t2)
@@ -125,7 +126,7 @@ def test_filling():
     norb = 18
     U = 8
     spin = 1
-    mymf = hamiltonians.hubbard_mf(norb, U, spin=spin, filling=0.6)
+    mymf = hubbard.hubbard_mf(norb, U, spin=spin, filling=0.6)
     e = mymf.energy_elec()[0]
     
 def test_disorder():
@@ -134,7 +135,7 @@ def test_disorder():
 def test_spinless():
     nsite = 10
     V = 4
-    mf = hamiltonians.hubbard_spinless_mf(nsite, V, nelec=None, pbc=False, filling=0.8)
+    mf = hubbard.hubbard_spinless_mf(nsite, V, nelec=None, pbc=False, filling=0.8)
     rdm1 = mf.make_rdm1()
 
 
@@ -145,7 +146,7 @@ def test_spinless_fci():
     nelec = 5
 
     # first do a mean-field calculation
-    mymf = hamiltonians.hubbard_spinless_mf(norb, U, nelec=nelec, pbc=True)
+    mymf = hubbard.hubbard_spinless_mf(norb, U, nelec=nelec, pbc=True)
     rdm1 = mymf.make_rdm1()
     mo_coeff = mymf.mo_coeff
 
@@ -156,7 +157,7 @@ def test_spinless_fci():
     e_fci, civec = cisolver.kernel(h1_mo, h2_mo, norb, (nelec, 0))
 
     # # compare to pyscf 
-    h1e, eri = hamiltonians.hubham_spinless_1d(norb, U, pbc=True)
+    h1e, eri = hubbard.hubham_spinless_1d(norb, U, pbc=True)
     h1_0 = np.zeros_like(h1e)
     h2_0 = np.zeros_like(eri)
 

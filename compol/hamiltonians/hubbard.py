@@ -251,7 +251,6 @@ def hubbard_spinless_fci(nsite, V, nelec=None, pbc=True, filling=1.0):
     h1_0 = np.zeros_like(h1e)
     h2_0 = np.zeros_like(eri)
 
-    
     if nelec is None:
         filling /= 2
         nelec = int(nsite * filling + 1e-10)
