@@ -24,6 +24,7 @@ class spinless1d(object):
         -t^' \sum_{\llangle i, j\rrangle} (a^\dagger_i a_j + h.c.)
         + \sum_i w_i a^\dagger_i a_i 
         + V\sum_{\langle i, j\rangle} n_i n_j
+    FCI can take 18 sites, maybe more. 
     '''
     def __init__(self, nsite, V, W=1, tprime=0, pbc=False, distrib="box", 
                  nelec=None, filling=0.5):
@@ -53,16 +54,18 @@ class spinless1d(object):
             if abs(filling - nelec/nsite) > 1e-15:
                 logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer electron count!".format(filling, f))
         self.nelec = nelec
+        self.print_info()
 
     def print_info(self):
-        print("###############################################")
-        print("1D spinless Hamiltonian with diagonal disorder.")
-        print("###############################################")
-        print(" L = {:d}  |  Nelec = {:d}  |  V = {:0.2f}  ".format(self.nsite, self.nelec, self.V))
-        print(" tprime = {:0.2f}  |  pbc = {}".format(self.tprime, self.pbc))
-        print(" Disorder info:")
+        header = "1D spinless Hamiltonian with diagonal disorder."
+        sys_info = " L = {:d}  |  Ne = {:d}  |  V = {:0.1f}  |  PBC = {}".format(self.nsite, self.nelec, self.V, self.pbc)
+        lh = len(header)
+        print("#"*lh + "\n" + header + '\n' + "#"*lh)
+        print(sys_info)
+        print("-"*lh)
+        print(" tprime = {:0.2f}  ".format(self.tprime))
         print(" Distribution = {} | Width = {:0.2f}".format(self.distrib, self.W))
-        print("###############################################")
+        print("#"*lh)
 
     def gen_ham(self):
         """
@@ -84,7 +87,6 @@ class spinless1d(object):
             h1e[i, i+1] = h1e[i+1, i] = -1.
             h1e[i, i+2] = h1e[i+2, i] = self.tprime
         h1e[-2, -1] = h1e[-1, -2] = -1.
-        h1e += np.diag(noise)
 
         # 2-body term
         for i in range(self.nsite - 1):
@@ -94,75 +96,99 @@ class spinless1d(object):
             h1e[0, -1] = h1e[-1, 0] = -1.
             h1e[0, -2] = h1e[-2, 0] = self.tprime
             h2e[0, -1] = h2e[-1, 0] = self.V / 2.
+        h1e += np.diag(noise)
         return h1e, h2e
 
+    def gen_scf(self, mf_tol=1e-10, mf_niter=100):
+        """
+        Generate the PySCF meanfield object.
+        """
+        mol = gto.M()
+        mol.nelectron = self.nelec
+        mol.nao = self.nsite
+        mol.spin = self.nelec # spinless
+        h1e, eri = self.gen_ham()
+        mol.build()
 
-def ham_disorder_1d(nsite, V, W=1, tprime=0, pbc=False, dist="box"):
-    '''
-    Generate the Hamiltonian for the disorder model. 
-    Two-body Hamiltonian has the form a_i^\dag a_i a^\dag_j a_j
-    Args:
-        nsite: int, number of sites.
-        V: float, nearest-neighbor two-body interaction strength.
-        W: float, The width of the distribution
-        tprime: float, next--nearest-neighbor hopping amplitude
-    '''
-    h1e = np.zeros((nsite, nsite))
-    h2e = np.zeros((nsite,)*4)
+        mf = scf.UHF(mol)
+        mf.get_hcore = lambda *args: h1e
+        mf.get_ovlp = lambda *args: np.eye(self.nsite)
+        mf._eri = ao2mo.restore(1, eri, self.nsite)
+        mol.incore_anyway = True
+        mf.conv_tol = mf_tol
+        mf.max_cycle = mf_niter
+        mf.kernel()
+        return mf
 
-    # create noise
-    if dist == "box":
-        noise = np.random.uniform(-W, W, nsite)
-    elif dist == "gaussian":
-        noise = np.random.normal(0, W, nsite)
-    else:
-        raise ValueError("Distributions can only be 'box' or 'gaussian'!")
+    def gen_ham_full():
+        pass 
 
-    # 1-body term
-    for i in range(nsite-2):
-        h1e[i, i+1] = h1e[i+1, i] = -1.
-        h1e[i, i+2] = h1e[i+2, i] = tprime
-    h1e[-2, -1] = h1e[-1, -2] = -1.
-    h1e += np.diag(noise)
+# def ham_disorder_1d(nsite, V, W=1, tprime=0, pbc=False, dist="box"):
+#     '''
+#     Generate the Hamiltonian for the disorder model. 
+#     Two-body Hamiltonian has the form a_i^\dag a_i a^\dag_j a_j
+#     Args:
+#         nsite: int, number of sites.
+#         V: float, nearest-neighbor two-body interaction strength.
+#         W: float, The width of the distribution
+#         tprime: float, next--nearest-neighbor hopping amplitude
+#     '''
+#     h1e = np.zeros((nsite, nsite))
+#     h2e = np.zeros((nsite,)*4)
 
-    # 2-body term
-    for i in range(nsite-1):
-        h2e[i, i, i+1, i+1] = h2e[i+1, i+1, i, i] = V/2. # making h2e symmetric 
+#     # create noise
+#     if dist == "box":
+#         noise = np.random.uniform(-W, W, nsite)
+#     elif dist == "gaussian":
+#         noise = np.random.normal(0, W, nsite)
+#     else:
+#         raise ValueError("Distributions can only be 'box' or 'gaussian'!")
 
-    if pbc:
-        h1e[0, -1] = h1e[-1, 0] = -1. 
-        h1e[0, -2] = h1e[-2, 0] = tprime    
-        h2e[0, -1] = h2e[-1, 0] = V/2.
+#     # 1-body term
+#     for i in range(nsite-2):
+#         h1e[i, i+1] = h1e[i+1, i] = -1.
+#         h1e[i, i+2] = h1e[i+2, i] = tprime
+#     h1e[-2, -1] = h1e[-1, -2] = -1.
+#     h1e += np.diag(noise)
+
+#     # 2-body term
+#     for i in range(nsite-1):
+#         h2e[i, i, i+1, i+1] = h2e[i+1, i+1, i, i] = V/2. # making h2e symmetric 
+
+#     if pbc:
+#         h1e[0, -1] = h1e[-1, 0] = -1. 
+#         h1e[0, -2] = h1e[-2, 0] = tprime    
+#         h2e[0, -1] = h2e[-1, 0] = V/2.
     
-    return h1e, h2e 
+#     return h1e, h2e 
 
 
-def mf_disorder(nsite, V, W=1, tprime=0, pbc=False, dist="box", 
-                filling=1.0, nelec=None, mf_tol=1e-10, mf_niter=100):
-    '''
-    Generate the pyscf meanfield object 
-    '''
-    mol = gto.M()
+# def mf_disorder(nsite, V, W=1, tprime=0, pbc=False, dist="box", 
+#                 filling=1.0, nelec=None, mf_tol=1e-10, mf_niter=100):
+#     '''
+#     Generate the pyscf meanfield object 
+#     '''
+#     mol = gto.M()
     
-    if nelec is None:
-        filling /= 2 # spinless 
-        nelec = int(nsite * filling + 1e-10)
-        if abs(nelec - nsite * filling) > 1e-2:
-            logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
+#     if nelec is None:
+#         filling /= 2 # spinless 
+#         nelec = int(nsite * filling + 1e-10)
+#         if abs(nelec - nsite * filling) > 1e-2:
+#             logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer number of electrons!".format(filling, nelec/nsite))
     
 
-    mol.nelectron = nelec
-    mol.nao = nsite
-    mol.spin = nelec
-    h1e, eri = ham_disorder_1d(nsite, V, W=W, tprime=tprime, pbc=pbc, dist=dist)
+#     mol.nelectron = nelec
+#     mol.nao = nsite
+#     mol.spin = nelec
+#     h1e, eri = ham_disorder_1d(nsite, V, W=W, tprime=tprime, pbc=pbc, dist=dist)
     
-    mf = scf.UHF(mol)
-    mf.get_hcore = lambda *args: h1e 
-    mf.get_ovlp = lambda *args: np.eye(nsite)
-    mf._eri = ao2mo.restore(8, eri, nsite)
-    mol.incore_anyway = True
-    mf.conv_tol = mf_tol
-    mf.max_cycle = mf_niter
-    mf.kernel()
-    return mf
+#     mf = scf.UHF(mol)
+#     mf.get_hcore = lambda *args: h1e 
+#     mf.get_ovlp = lambda *args: np.eye(nsite)
+#     mf._eri = ao2mo.restore(8, eri, nsite)
+#     mol.incore_anyway = True
+#     mf.conv_tol = mf_tol
+#     mf.max_cycle = mf_niter
+#     mf.kernel()
+#     return mf
 

@@ -15,26 +15,38 @@
 import numpy as np
 from compol import helpers
 from compol.hamiltonians import disorder_ham
-from pyscf import gto, scf, ao2mo, fci
+from compol.solvers import fci_slow_uhf as fci_slow
+from pyscf.fci import direct_uhf
+from pyscf import fci, ao2mo 
 
-def test_ham():
-    nsite = 6
-    V = 1 
+
+def test_all():
+    nsite = 12
+    V = 3
     tprime = -2
-    W = 3 
+    W = 3
     pbc = False
-    h1e, h2e = disorder_ham.ham_disorder_1d(nsite, V, W, tprime, pbc=pbc, dist='box')
-    print(h2e)
+    obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
+    mf = obj.gen_scf()
+    h1e = mf.get_hcore()
+    eri = mf._eri
+    nelec = mf.nelec
+    mo = mf.mo_coeff
+    e_hf = mf.e_tot
+    # h1e_mo = np.array(
+    #     [mo[0].T @ h1e @ mo[0], mo[1].T @ h1e @ mo[1]]
+    # )
+    # print(h1e_mo[0][0])
+    # h2aa = ao2mo.kernel(eri, (mo[0], mo[0], mo[0], mo[0]))
+    # h2ab = ao2mo.kernel(eri, (mo[0], mo[0], mo[1], mo[1]))
+    # h2bb = ao2mo.kernel(eri, (mo[1], mo[1], mo[1], mo[1]))
+    # h2e_mo = np.array([h2aa, h2ab, h2bb])
+    h1e_mo, h2e_mo = helpers.ao2mo_spinless(h1e, eri, mo)
+    e, v = fci_slow.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=e_hf/2)
+    # myci = fci.FCI(mf)
+    # e2, v2 = myci.kernel()
+    print(v)
+    # print(e, e2)
 
-def test_mf():
-    nsite = 6
-    V = 1 
-    tprime = -2
-    W = 3 
-    pbc = False
-    filling=1.0
 
-    mf = disorder_ham.mf_disorder(nsite, V, W, tprime, pbc=pbc, dist='box', filling=filling)
-    print(mf.e_tot)
-
-test_mf()
+test_all()

@@ -61,11 +61,27 @@ def rotate_ham_spinless(mf):
 
     h1_mo = np.array([C.T@h1e@C, h1e*0])
     h2e_aaaa = ao2mo.incore.general(eri, aaaa, compact=False).reshape(norb, norb, norb, norb)
-
     h2_mo = np.array([h2e_aaaa, h2e_aaaa*0, h2e_aaaa*0])
-
     return h1_mo, h2_mo
 
+
+def ao2mo_spinless(h1e, g2e, mo_coeff):
+    '''
+    Transform the Hamiltonians in the site basis to the MO basis.
+    Args:
+        h1e: 2D array
+        g2e: 4D array
+        mo_coeff: 3D array
+    Returns:
+        h1e_mo
+        g2e_mo
+    '''
+    moc = mo_coeff[0] # only alpha spin
+    nao = moc.shape[-1]
+    h1e_a = moc.conj().T @ h1e @ moc 
+    g2e_a = ao2mo.incore.general(g2e, (moc,)*4, compact=False).reshape(nao, nao, nao, nao)
+    # return h1e_a, g2e_a
+    return np.array([h1e_a, h1e_a]), np.array([g2e_a, g2e_a, g2e_a]) 
 
 def contract_1e_uhf(f1e, fcivec, norb, nelec):
     '''
