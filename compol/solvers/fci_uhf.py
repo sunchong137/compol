@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright 2014-2021 The PySCF Developers. All Rights Reserved.
+# Copyright 2023 ComPol developers. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Author: Qiming Sun <osirpt.sun@gmail.com>
-#
+
+'''
+Adapted from PySCF's fci_slow.py
+Added features:
+- UHF
+- Target the middle of the energy spectrum.
+'''
 
 import numpy
 import ctypes
@@ -270,34 +273,3 @@ def reorder_rdm(rdm1, rdm2, inplace=True):
     for k in range(nmo):
         rdm2[:,k,k,:] -= rdm1
     return rdm1, rdm2
-
-
-if __name__ == '__main__':
-    from functools import reduce
-    from pyscf import gto
-    from pyscf import scf
-
-    mol = gto.Mole()
-    mol.verbose = 0
-    mol.output = None
-    mol.atom = [
-        ['H', ( 1.,-1.    , 0.   )],
-        ['H', ( 0.,-1.    ,-1.   )],
-        ['H', ( 1.,-0.5   ,-1.   )],
-        ['H', ( 0.,-0.    ,-1.   )],
-        ['H', ( 1.,-0.5   , 0.   )],
-        ['H', ( 0., 1.    , 1.   )],
-    ]
-    mol.basis = 'sto-3g'
-    mol.build()
-
-    m = scf.RHF(mol)
-    m.kernel()
-    norb = m.mo_coeff.shape[1]
-    nelec = mol.nelectron - 2
-    h1e = reduce(numpy.dot, (m.mo_coeff.T, m.get_hcore(), m.mo_coeff))
-    eri = ao2mo.kernel(m._eri, m.mo_coeff, compact=False)
-    eri = eri.reshape(norb,norb,norb,norb)
-
-    e1 = kernel(h1e, eri, norb, nelec)
-    print(e1, e1 - -7.9766331504361414)

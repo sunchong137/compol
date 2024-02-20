@@ -15,7 +15,7 @@
 import numpy as np
 from compol import helpers
 from compol.hamiltonians import disorder_ham
-from compol.solvers import fci_slow_uhf as fci_slow
+from compol.solvers import fci_uhf
 from pyscf.fci import direct_uhf
 from pyscf import fci, ao2mo 
 
@@ -42,7 +42,7 @@ def test_all():
     # h2bb = ao2mo.kernel(eri, (mo[1], mo[1], mo[1], mo[1]))
     # h2e_mo = np.array([h2aa, h2ab, h2bb])
     h1e_mo, h2e_mo = helpers.ao2mo_spinless(h1e, eri, mo)
-    e, v = fci_slow.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=e_hf/2)
+    e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=e_hf/2)
     # myci = fci.FCI(mf)
     # e2, v2 = myci.kernel()
     print(v)
