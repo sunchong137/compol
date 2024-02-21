@@ -83,6 +83,16 @@ def ao2mo_spinless(h1e, g2e, mo_coeff):
     # return h1e_a, g2e_a
     return np.array([h1e_a, h1e_a]), np.array([g2e_a, g2e_a, g2e_a]) 
 
+def ao2mo_uhf(h1e, g2e, mo_coeff):
+    h1e_mo = np.array(
+        [mo_coeff[0].T @ h1e[0] @ mo_coeff[0], mo_coeff[1].T @ h1e[0] @ mo_coeff[1]]
+    )
+    h2aa = ao2mo.kernel(g2e[0], (mo_coeff[0], mo_coeff[0], mo_coeff[0], mo_coeff[0]))
+    h2ab = ao2mo.kernel(g2e[1], (mo_coeff[0], mo_coeff[0], mo_coeff[1], mo_coeff[1]))
+    h2bb = ao2mo.kernel(g2e[2], (mo_coeff[1], mo_coeff[1], mo_coeff[1], mo_coeff[1]))
+    h2e_mo = np.array([h2aa, h2ab, h2bb])
+    return h1e_mo, h2e_mo 
+
 def contract_1e_uhf(f1e, fcivec, norb, nelec):
     '''
     Evaluate h|c>, where h is a one-body operator and |c> is a vector.
