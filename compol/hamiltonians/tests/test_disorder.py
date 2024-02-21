@@ -21,10 +21,10 @@ from pyscf import fci, ao2mo
 
 
 def test_all():
-    nsite = 12
-    V = 3
-    tprime = -2
-    W = 3
+    nsite = 10
+    V = 2
+    tprime = -1
+    W = 4
     pbc = False
     obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
     mf = obj.gen_scf()
@@ -32,22 +32,28 @@ def test_all():
     eri = mf._eri
     nelec = mf.nelec
     mo = mf.mo_coeff
+    # m_occ = np.zeros(nsite)
+    # m_occ[:nelec[0]] = 1
+    # np.random.shuffle(m_occ)
+    # rdm1_mf = mf.make_rdm1(mo, [m_occ, m_occ*0])[0]
+    # ew, ev = np.linalg.eigh(rdm1_mf)
+    # print(ew)
+    # exit()
+    # mo_e = mf.mo_energy
+    # print(mo_e)
+    # veff = mf.get_veff()
+    # print(veff)
+    # exit()
     e_hf = mf.e_tot
-    # h1e_mo = np.array(
-    #     [mo[0].T @ h1e @ mo[0], mo[1].T @ h1e @ mo[1]]
-    # )
-    # print(h1e_mo[0][0])
-    # h2aa = ao2mo.kernel(eri, (mo[0], mo[0], mo[0], mo[0]))
-    # h2ab = ao2mo.kernel(eri, (mo[0], mo[0], mo[1], mo[1]))
-    # h2bb = ao2mo.kernel(eri, (mo[1], mo[1], mo[1], mo[1]))
-    # h2e_mo = np.array([h2aa, h2ab, h2bb])
+
     h1e_mo, h2e_mo = helpers.ao2mo_spinless(h1e, eri, mo)
     e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=e_hf/2)
     # myci = fci.FCI(mf)
     # e2, v2 = myci.kernel()
     # print(v)
     rdm1, rdm2 = fci_uhf.make_rdm12(v, nsite, nelec)
-    # print(rdm1)
+    ew, ev = np.linalg.eigh(rdm1)
+    print(ew)
 
 
 test_all()
