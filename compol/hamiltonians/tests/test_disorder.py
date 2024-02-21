@@ -45,8 +45,9 @@ def test_all():
     e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=e_hf/2)
     # myci = fci.FCI(mf)
     # e2, v2 = myci.kernel()
-    print(v)
-    # print(e, e2)
+    # print(v)
+    rdm1, rdm2 = fci_uhf.make_rdm12(v, nsite, nelec)
+    # print(rdm1)
 
 
 test_all()

@@ -23,17 +23,13 @@ import numpy
 import ctypes
 from pyscf import lib
 from pyscf import ao2mo
-from pyscf.fci import cistring, direct_spin1
+from pyscf.fci import cistring, direct_spin1, rdm
 # from pyscf import lib 
 
 libfci = direct_spin1.libfci
 
 def contract_1e(f1e, fcivec, norb, nelec):
-    if isinstance(nelec, (int, numpy.integer)):
-        nelecb = nelec//2
-        neleca = nelec - nelecb
-    else:
-        neleca, nelecb = nelec
+    neleca, nelecb = _unpack_nelec(nelec)
     link_indexa = cistring.gen_linkstr_index(range(norb), neleca)
     link_indexb = cistring.gen_linkstr_index(range(norb), nelecb)
     na = cistring.num_strings(norb, neleca)
@@ -74,57 +70,6 @@ def contract_2e(eri, fcivec, norb, nelec, link_index=None):
                              link_indexb.ctypes.data_as(ctypes.c_void_p))
     return ci1.view(direct_spin1.FCIvector)
 
-def contract_2e_hubbard(u, fcivec, norb, nelec, opt=None):
-    if isinstance(nelec, (int, numpy.number)):
-        nelecb = nelec//2
-        neleca = nelec - nelecb
-    else:
-        neleca, nelecb = nelec
-    u_aa, u_ab, u_bb = u
-
-    strsa = cistring.gen_strings4orblist(range(norb), neleca)
-    strsb = cistring.gen_strings4orblist(range(norb), nelecb)
-    na = cistring.num_strings(norb, neleca)
-    nb = cistring.num_strings(norb, nelecb)
-    fcivec = fcivec.reshape(na,nb)
-    t1a = numpy.zeros((norb,na,nb))
-    t1b = numpy.zeros((norb,na,nb))
-    fcinew = numpy.zeros_like(fcivec)
-
-    for addr, s in enumerate(strsa):
-        for i in range(norb):
-            if s & (1 << i):
-                t1a[i,addr] += fcivec[addr]
-    for addr, s in enumerate(strsb):
-        for i in range(norb):
-            if s & (1 << i):
-                t1b[i,:,addr] += fcivec[:,addr]
-
-    if u_aa != 0:
-        # u * n_alpha^+ n_alpha
-        for addr, s in enumerate(strsa):
-            for i in range(norb):
-                if s & (1 << i):
-                    fcinew[addr] += t1a[i,addr] * u_aa
-    if u_ab != 0:
-        # u * n_alpha^+ n_beta
-        for addr, s in enumerate(strsa):
-            for i in range(norb):
-                if s & (1 << i):
-                    fcinew[addr] += t1b[i,addr] * u_ab
-        # u * n_beta^+ n_alpha
-        for addr, s in enumerate(strsb):
-            for i in range(norb):
-                if s & (1 << i):
-                    fcinew[:,addr] += t1a[i,:,addr] * u_ab
-    if u_bb != 0:
-        # u * n_beta^+ n_beta
-        for addr, s in enumerate(strsb):
-            for i in range(norb):
-                if s & (1 << i):
-                    fcinew[:,addr] += t1b[i,:,addr] * u_bb
-    return fcinew
-
 
 def absorb_h1e(h1e, eri, norb, nelec, fac=1):
     if not isinstance(nelec, (int, numpy.number)):
@@ -150,7 +95,7 @@ def absorb_h1e(h1e, eri, norb, nelec, fac=1):
 
 
 def make_hdiag(h1e, eri, norb, nelec, compress=False):
-    neleca, nelecb = nelec 
+    neleca, nelecb = _unpack_nelec(nelec)
     h1e_a = numpy.ascontiguousarray(h1e[0])
     h1e_b = numpy.ascontiguousarray(h1e[1])
     g2e_aa = ao2mo.restore(1, eri[0], norb)
@@ -186,11 +131,7 @@ def make_hdiag(h1e, eri, norb, nelec, compress=False):
 
 
 def kernel(h1e, eri, norb, nelec, ecore=0, target_e=None):
-    if isinstance(nelec, (int, numpy.integer)):
-        nelecb = nelec//2
-        neleca = nelec - nelecb
-    else:
-        neleca, nelecb = nelec
+    neleca, nelecb = _unpack_nelec(nelec)
     na = cistring.num_strings(norb, neleca)
     nb = cistring.num_strings(norb, nelecb)
 
@@ -223,53 +164,93 @@ def kernel(h1e, eri, norb, nelec, ecore=0, target_e=None):
     return e+ecore, c
 
 
-# dm_pq = <|p^+ q|>
-def make_rdm1(fcivec, norb, nelec, opt=None):
-    link_index = cistring.gen_linkstr_index(range(norb), nelec//2)
-    na = cistring.num_strings(norb, nelec//2)
-    fcivec = fcivec.reshape(na,na)
-    rdm1 = numpy.zeros((norb,norb))
-    for str0, tab in enumerate(link_index):
-        for a, i, str1, sign in link_index[str0]:
-            rdm1[a,i] += sign * numpy.dot(fcivec[str1],fcivec[str0])
-    for str0, tab in enumerate(link_index):
-        for a, i, str1, sign in link_index[str0]:
-            rdm1[a,i] += sign * numpy.dot(fcivec[:,str1],fcivec[:,str0])
-    return rdm1
+def make_rdm1s(fcivec, norb, nelec, link_index=None):
+    r'''Spin separated 1-particle density matrices.
+    The return values include two density matrices: (alpha,alpha), (beta,beta)
 
-# dm_pq,rs = <|p^+ q r^+ s|>
-def make_rdm12(fcivec, norb, nelec, opt=None):
-    link_index = cistring.gen_linkstr_index(range(norb), nelec//2)
-    na = cistring.num_strings(norb, nelec//2)
-    fcivec = fcivec.reshape(na,na)
+    dm1[p,q] = <q^\dagger p>
 
-    rdm1 = numpy.zeros((norb,norb))
-    rdm2 = numpy.zeros((norb,norb,norb,norb))
-    for str0, tab in enumerate(link_index):
-        t1 = numpy.zeros((na,norb,norb))
-        for a, i, str1, sign in link_index[str0]:
-            t1[:,i,a] += sign * fcivec[str1,:]
-
-        for k, tab in enumerate(link_index):
-            for a, i, str1, sign in tab:
-                t1[k,i,a] += sign * fcivec[str0,str1]
-
-        rdm1 += numpy.einsum('m,mij->ij', fcivec[str0], t1)
-        # i^+ j|0> => <0|j^+ i, so swap i and j
-        rdm2 += numpy.einsum('mij,mkl->jikl', t1, t1)
-    return reorder_rdm(rdm1, rdm2)
-
-
-def reorder_rdm(rdm1, rdm2, inplace=True):
-    '''reorder from rdm2(pq,rs) = <E^p_q E^r_s> to rdm2(pq,rs) = <e^{pr}_{qs}>.
-    Although the "reoredered rdm2" is still in Mulliken order (rdm2[e1,e1,e2,e2]),
-    it is the true 2e DM (dotting it with int2e gives the energy of 2e parts)
+    The convention is based on McWeeney's book, Eq (5.4.20).
+    The contraction between 1-particle Hamiltonian and rdm1 is
+    E = einsum('pq,qp', h1, rdm1)
     '''
-    nmo = rdm1.shape[0]
-    if inplace:
-        rdm2 = rdm2.reshape(nmo,nmo,nmo,nmo)
+    if link_index is None:
+        neleca, nelecb = _unpack_nelec(nelec)
+        link_indexa = cistring.gen_linkstr_index(range(norb), neleca)
+        link_indexb = cistring.gen_linkstr_index(range(norb), nelecb)
+        link_index = (link_indexa, link_indexb)
+    rdm1a = rdm.make_rdm1_spin1('FCImake_rdm1a', fcivec, fcivec,
+                                norb, nelec, link_index)
+    rdm1b = rdm.make_rdm1_spin1('FCImake_rdm1b', fcivec, fcivec,
+                                norb, nelec, link_index)
+    return rdm1a, rdm1b
+
+def make_rdm1(fcivec, norb, nelec, link_index=None):
+    r'''Spin-traced one-particle density matrix
+
+    dm1[p,q] = <q_alpha^\dagger p_alpha> + <q_beta^\dagger p_beta>
+
+    The convention is based on McWeeney's book, Eq (5.4.20)
+    The contraction between 1-particle Hamiltonian and rdm1 is
+    E = einsum('pq,qp', h1, rdm1)
+    '''
+    rdm1a, rdm1b = make_rdm1s(fcivec, norb, nelec, link_index)
+    return rdm1a + rdm1b
+
+def make_rdm12s(fcivec, norb, nelec, link_index=None, reorder=True):
+    r'''Spin separated 1- and 2-particle density matrices.
+    The return values include two lists, a list of 1-particle density matrices
+    and a list of 2-particle density matrices.  The density matrices are:
+    (alpha,alpha), (beta,beta) for 1-particle density matrices;
+    (alpha,alpha,alpha,alpha), (alpha,alpha,beta,beta),
+    (beta,beta,beta,beta) for 2-particle density matrices.
+
+    1pdm[p,q] = :math:`\langle q^\dagger p\rangle`;
+    2pdm[p,q,r,s] = :math:`\langle p^\dagger r^\dagger s q\rangle`.
+
+    Energy should be computed as
+    E = einsum('pq,qp', h1, 1pdm) + 1/2 * einsum('pqrs,pqrs', eri, 2pdm)
+    where h1[p,q] = <p|h|q> and eri[p,q,r,s] = (pq|rs)
+    '''
+    dm1a, dm2aa = rdm.make_rdm12_spin1('FCIrdm12kern_a', fcivec, fcivec,
+                                       norb, nelec, link_index, 1)
+    dm1b, dm2bb = rdm.make_rdm12_spin1('FCIrdm12kern_b', fcivec, fcivec,
+                                       norb, nelec, link_index, 1)
+    _, dm2ab = rdm.make_rdm12_spin1('FCItdm12kern_ab', fcivec, fcivec,
+                                    norb, nelec, link_index, 0)
+    if reorder:
+        dm1a, dm2aa = rdm.reorder_rdm(dm1a, dm2aa, inplace=True)
+        dm1b, dm2bb = rdm.reorder_rdm(dm1b, dm2bb, inplace=True)
+    return (dm1a, dm1b), (dm2aa, dm2ab, dm2bb)
+
+def make_rdm12(fcivec, norb, nelec, link_index=None, reorder=True):
+    r'''Spin traced 1- and 2-particle density matrices.
+
+    1pdm[p,q] = :math:`\langle q_\alpha^\dagger p_\alpha \rangle +
+                       \langle q_\beta^\dagger  p_\beta \rangle`;
+    2pdm[p,q,r,s] = :math:`\langle p_\alpha^\dagger r_\alpha^\dagger s_\alpha q_\alpha\rangle +
+                           \langle p_\beta^\dagger  r_\alpha^\dagger s_\alpha q_\beta\rangle +
+                           \langle p_\alpha^\dagger r_\beta^\dagger  s_\beta  q_\alpha\rangle +
+                           \langle p_\beta^\dagger  r_\beta^\dagger  s_\beta  q_\beta\rangle`.
+
+    Energy should be computed as
+    E = einsum('pq,qp', h1, 1pdm) + 1/2 * einsum('pqrs,pqrs', eri, 2pdm)
+    where h1[p,q] = <p|h|q> and eri[p,q,r,s] = (pq|rs)
+    '''
+    #(dm1a, dm1b), (dm2aa, dm2ab, dm2bb) = \
+    #        make_rdm12s(fcivec, norb, nelec, link_index, reorder)
+    #return dm1a+dm1b, dm2aa+dm2ab+dm2ab.transpose(2,3,0,1)+dm2bb
+    dm1, dm2 = rdm.make_rdm12_spin1('FCIrdm12kern_sf', fcivec, fcivec,
+                                    norb, nelec, link_index, 1)
+    if reorder:
+        dm1, dm2 = rdm.reorder_rdm(dm1, dm2, inplace=True)
+    return dm1, dm2
+
+
+def _unpack_nelec(nelec):
+    if isinstance(nelec, (int, numpy.integer)):
+        nelecb = nelec // 2
+        neleca = nelec - nelecb
     else:
-        rdm2 = rdm2.copy().reshape(nmo,nmo,nmo,nmo)
-    for k in range(nmo):
-        rdm2[:,k,k,:] -= rdm1
-    return rdm1, rdm2
+        neleca, nelecb = nelec
+    return neleca, nelecb

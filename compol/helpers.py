@@ -25,6 +25,7 @@ def run_stab_mf(mf):
     init = mf.make_rdm1(mo1, mf.mo_occ)                                                 
     mf.kernel(init)
 
+
 def rotate_ham(mf):
     '''
     Rotate the Hamiltonian from atomic orbitals to molecular orbitals.
@@ -44,8 +45,8 @@ def rotate_ham(mf):
     h2e_bbbb = ao2mo.incore.general(eri, bbbb, compact=False).reshape(norb, norb, norb, norb)
     h2e_aabb = ao2mo.incore.general(eri, aabb, compact=False).reshape(norb, norb, norb, norb)
     h2_mo = np.array([h2e_aaaa, h2e_aabb, h2e_bbbb])
-
     return h1_mo, h2_mo
+
 
 def rotate_ham_spinless(mf):
     '''
@@ -83,6 +84,7 @@ def ao2mo_spinless(h1e, g2e, mo_coeff):
     # return h1e_a, g2e_a
     return np.array([h1e_a, h1e_a]), np.array([g2e_a, g2e_a, g2e_a]) 
 
+
 def ao2mo_uhf(h1e, g2e, mo_coeff):
     h1e_mo = np.array(
         [mo_coeff[0].T @ h1e[0] @ mo_coeff[0], mo_coeff[1].T @ h1e[0] @ mo_coeff[1]]
@@ -92,6 +94,7 @@ def ao2mo_uhf(h1e, g2e, mo_coeff):
     h2bb = ao2mo.kernel(g2e[2], (mo_coeff[1], mo_coeff[1], mo_coeff[1], mo_coeff[1]))
     h2e_mo = np.array([h2aa, h2ab, h2bb])
     return h1e_mo, h2e_mo 
+
 
 def contract_1e_uhf(f1e, fcivec, norb, nelec):
     '''
@@ -165,6 +168,7 @@ def contract_1e_onespin(f1e, fcivec, norb, nelec, spin="a"):
     else:
         raise ValueError("spin can only be 'a' or 'b'!")
     return fcinew.reshape(fcivec.shape)
+
 
 def contract_1e_spinless():
     # TODO
