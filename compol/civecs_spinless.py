@@ -32,8 +32,10 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
         L: number of orbitals
         civec: FCI coefficients
     Returns
-        float
+        float, the norm of the complex polarization.
     '''
+    if not isinstance(nelec, (int, np.integer)):
+        nelec = nelec[0] + nelec[1]
     # define complex polarization
     Z = slater_spinless.gen_zmat_site(L, x0)
     ci = ci.ravel()
@@ -57,14 +59,19 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
 
 def compol_fci_prod(ci, norb, nelec, x0=0.):
     
-    nelec_spinless = (nelec, 0)
-    ci_vec = ci.astype(complex)
+    # nelec_spinless = (nelec, 0)
+    if isinstance(nelec, (int, np.integer)):
+        nelec_sl = (nelec, 0)
+    else:
+        nelec_sl = nelec
+
+    ci_vec = ci.astype(complex).ravel()
     new_vec = np.copy(ci_vec)
     for site in range(norb):
         f1e = np.zeros((norb, norb))
         f1e[site, site] = 1.0
         coeff = np.exp(2.j*Pi*(site-x0)/norb)-1.0
-        delta = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec_spinless, "a") * coeff
+        delta = helpers.contract_1e_onespin(f1e, new_vec, norb, nelec_sl, "a") * coeff
         new_vec += delta
     Z = np.dot(ci_vec.conj(), new_vec) 
     return np.linalg.norm(Z)

@@ -148,6 +148,7 @@ def contract_1e_onespin(f1e, fcivec, norb, nelec, spin="a"):
         neleca = nelec - nelecb
     else:
         neleca, nelecb = nelec
+        
     na = cistring.num_strings(norb, neleca)
     nb = cistring.num_strings(norb, nelecb)
     ci0 = fcivec.reshape(na,nb)

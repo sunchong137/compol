@@ -98,6 +98,10 @@ class spinless1d(object):
             h2e[0, -1] = h2e[-1, 0] = self.V / 2.
         h1e += np.diag(noise)
         return h1e, h2e
+    
+    def gen_ham_uhf(self):
+        h1e, h2e = self.gen_ham()
+        return np.array([h1e, h1e*0]), np.array([h2e, h2e*0, h2e*0])
 
     def gen_scf(self, mf_tol=1e-10, mf_niter=100):
         """
