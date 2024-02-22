@@ -76,10 +76,14 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
         ovlp = np.linalg.det(sdet1.T.conj() @ ao_ovlp @ sdet2)
     return ovlp
 
-def det_z_det(L, sdet, x0=0.0):
+def det_z_det(L, sdet, x0=0.0, normalize=False):
     '''
     Evaluate <det | Z | det> / <det | det>
     Returns:
         A complex number
     '''
-    return slater.det_z_det(L, sdet, x0)
+    sdet2 = z_sdet(L, sdet, x0=x0)
+    Z = ovlp_det(sdet, sdet2) 
+    if normalize:
+        Z /= ovlp_det(sdet, sdet)
+    return np.linalg.norm(Z)

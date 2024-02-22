@@ -27,7 +27,7 @@ def test_all():
     W = 4
     pbc = False
     obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
-    mf = obj.gen_scf()
+    mf = obj.run_scf()
     h1e = mf.get_hcore()
     eri = mf._eri
     nelec = mf.nelec

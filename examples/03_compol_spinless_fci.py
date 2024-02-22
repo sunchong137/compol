@@ -1,20 +1,16 @@
-'''
-Evaluate the complex polarization under FCI.
-'''
 import numpy as np 
-from compol import civecs_spinless, helpers
+from compol import civecs_spinless
 from compol.hamiltonians import disorder_ham
 from compol.solvers import fci_uhf
-from pyscf import fci
 
-nsite = 10
+nsite = 14
 V = 0
 tprime = 0
 W = 0
 pbc = True
 nelec = (nsite // 2, 0)
 obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
-mf = obj.gen_scf()
+mf = obj.run_scf()
 h1e = mf.get_hcore()
 h2e = mf._eri
 nelec = mf.nelec

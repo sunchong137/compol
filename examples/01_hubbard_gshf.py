@@ -1,10 +1,9 @@
 '''
 Evaluate the ground state complex polarization for Hubbard model.
 '''
-import sys
-sys.path.append("../")
-import hubbard
-import slater_site 
+
+from compol.hamiltonians import hubbard
+from compol import slater
 
 norb = 10
 U = 4
@@ -19,5 +18,5 @@ rdm1 = mymf.make_rdm1()
 mo_coeff = mymf.mo_coeff
 print(mo_coeff[0] - mo_coeff[1])
 sdet = mo_coeff[:, :, :nocc]
-z = slater_site.det_z_det(norb, sdet, x0=0.0)
+z = slater.det_z_det(norb, sdet, x0=0.0)
 print(z)
