@@ -103,7 +103,7 @@ class spinless1d(object):
         h1e, h2e = self.gen_ham()
         return np.array([h1e, h1e*0]), np.array([h2e, h2e*0, h2e*0])
 
-    def run_scf(self, mf_tol=1e-10, mf_niter=100):
+    def run_scf(self, mf_tol=1e-10, mf_niter=100, T=0, Tmin=1e-2):
         """
         Generate the PySCF meanfield object.
         """

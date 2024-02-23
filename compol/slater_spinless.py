@@ -22,11 +22,11 @@ from compol import slater
 
 Pi = np.pi
 
-def gen_zmat_site(L, x0):
+def gen_zmat_site(L, x0, T=0, Tmin=1e-2):
     '''
     Generate the Z operator in the site basis for MO coeffs.
     '''
-    return slater.gen_zmat_site(L, x0)
+    return slater.gen_zmat_site(L, x0, T=T, Tmin=Tmin)
 
 def gen_det(mo_coeff, occ):
     '''

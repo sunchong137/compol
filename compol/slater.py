@@ -21,13 +21,18 @@ import numpy as np
 
 Pi = np.pi
 
-def gen_zmat_site(L, x0):
+def gen_zmat_site(L, x0, T=0, Tmin=1e-2):
     '''
     Generate the matrix for Z operator in the site basis for MO coeffs.
     '''
     pos = np.arange(L) + x0 
     Z = np.exp(2.j * Pi * pos / L)
-    return np.diag(Z)
+    if T > Tmin:
+        Z_ft = np.eye(L*2, dtype=np.complex128)
+        Z_ft[:L] = np.diag(Z)
+        return Z_ft 
+    else:
+        return np.diag(Z)
 
 
 def gen_det(mo_coeff, occ):
