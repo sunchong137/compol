@@ -16,16 +16,52 @@
 Evaluate complex polarization based on Slater determinants at finite temperature.
 1D model system with site basis only, 
 '''
-from compol import slater
+from compol import slater_spinless
 import numpy as np
+from scipy import linalg as sla
 
 Pi = np.pi
-def gen_zmat_site_ft(L, x0):
+
+def gen_zmat_site(L, x0):
     '''
     Generate the matrix for Z operator in the site basis for MO coeffs.
     '''
     pos = np.arange(L) + x0 
     Z = np.eye(L*2, dtype=np.complex128)
     Z[:L, :L] = np.diag(np.exp(2.j * Pi * pos / L))
-    return Z
+    return Z 
+
+
+def ovlp_det(sdet1, sdet2, ao_ovlp=None):
+    return slater_spinless.ovlp_det(sdet1, sdet2, ao_ovlp=ao_ovlp)
+
+def det_z_det(L, fock, T, x0=0, Tmin=1e-2):
+    '''
+    Finite temperature form of the complex polarization.
+    Args:
+        L (int) : length of the site.
+        fock (array) : the finite T fock operator.
+        T (float) : temperature.
+    Kwargs:
+        x0 (float) : original
+        Tmin (float) : minimum non-zero temperature.
+    Returns:
+        float, the modulo of the complex polarization.
+    '''
+    if T < Tmin:
+        raise ValueError("Temperature value is too small!")
+        # TODO return ground state value
+    Z = gen_zmat_site(L, x0) 
+    rho = np.zeros((L*2, L*2)) 
+    rho[:L, :L] = sla.expm(-1*fock/T)
+    rho[L:, L:] = np.eye(L)
+    C0 = np.zeros((2*L, L))
+    C0[:L] = np.eye(L) 
+    C0[L:] = np.eye(L) 
     
+    rho_c0 = rho @ C0 
+    top = C0.T @ Z @ rho_c0 
+    bot = C0.T @ rho_c0  
+
+    z_val = top / bot 
+    return np.linalg.norm(z_val)
