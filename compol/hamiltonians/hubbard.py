@@ -201,6 +201,7 @@ def hubbard_spinless_mf(nsite, V, nelec=None, pbc=True, filling=1.0):
     
 
     mol.nelectron = nelec
+    mol.tot_electrons = lambda *args: np.sum(nelec)
     mol.nao = nsite
     mol.spin = nelec
     h1e, eri = hubham_spinless_1d(nsite, V, pbc=pbc)

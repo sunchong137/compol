@@ -13,7 +13,8 @@
 # limitations under the License.
 import numpy as np
 import logging
-from pyscf import gto, scf, ao2mo, fci
+from pyscf import gto, scf, ao2mo
+from pyscf.scf.addons import smearing_
 
 class spinless1d(object):
     '''
@@ -109,18 +110,25 @@ class spinless1d(object):
         """
         mol = gto.M()
         mol.nelectron = self.nelec
+        mol.tot_electrons = lambda *args: np.sum(self.nelec)
         mol.nao = self.nsite
         mol.spin = self.nelec # spinless
         h1e, eri = self.gen_ham()
         mol.build()
-
         mf = scf.UHF(mol)
+        # add temperature 
+        if T > Tmin:
+            print("Running finite-temperature SCF!")
+            beta = 1/T 
+            mf = smearing_(mf, beta, 'fermi', fix_spin=False)
         mf.get_hcore = lambda *args: h1e
         mf.get_ovlp = lambda *args: np.eye(self.nsite)
         mf._eri = ao2mo.restore(1, eri, self.nsite)
         mol.incore_anyway = True
         mf.conv_tol = mf_tol
         mf.max_cycle = mf_niter
+
+
         mf.kernel()
         return mf
 
