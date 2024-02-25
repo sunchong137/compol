@@ -1,15 +1,14 @@
 import numpy as np 
 from compol import civecs_spinless, helpers
-from compol.hamiltonians import disorder_ham
+from compol.hamiltonians import goe
 from compol.solvers import fci_uhf
 
 nsite = 12
-V = 0
-tprime = 0
-W = 7
+W1 = 3
+W2 = 0
 pbc = False
 nelec = (nsite // 2, 0)
-obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
+obj = goe.spinless1d(nsite, W1, W2, 'gaussian')
 mf = obj.run_scf()
 h1e = mf.get_hcore()
 h2e = mf._eri
@@ -17,8 +16,7 @@ nelec = mf.nelec
 mo = mf.mo_coeff
 e_hf = mf.e_tot
 h1e_mo, h2e_mo = helpers.ao2mo_spinless(h1e, h2e, mo)
-e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=-0.1)
-print("Energy: ", e)
+e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=1)
 rdm1 = fci_uhf.make_rdm1(v, nsite, nelec)
 s, _ = np.linalg.eigh(rdm1)
 print(s)

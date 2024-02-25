@@ -81,7 +81,7 @@ class spinless1d(object):
         elif self.distrib == "gaussian":
             noise = np.random.normal(0, self.W, self.nsite)
         elif self.distrib == "none":
-            noise = np.ones(self.nsite) 
+            noise = np.ones(self.nsite) #* self.W
             noise[0] = self.W
             # noise[-1] = self.W
         else:

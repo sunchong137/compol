@@ -9,6 +9,7 @@ tprime = 1
 W = 4
 pbc = True
 nelec = (nsite // 2, 0)
+# obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'none')
 obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
 mf = obj.run_scf()
 # dm1 = mf.make_rdm1()
