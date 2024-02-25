@@ -80,13 +80,17 @@ class spinless1d(object):
             noise = np.random.uniform(-self.W, self.W, self.nsite)
         elif self.distrib == "gaussian":
             noise = np.random.normal(0, self.W, self.nsite)
+        elif self.distrib == "none":
+            noise = np.ones(self.nsite) 
+            noise[0] = self.W
+            # noise[-1] = self.W
         else:
             raise ValueError("Distributions can only be 'box' or 'gaussian'!")
 
         # 1-body term
         for i in range(self.nsite - 2):
             h1e[i, i+1] = h1e[i+1, i] = -1.
-            h1e[i, i+2] = h1e[i+2, i] = self.tprime
+            h1e[i, i+2] = h1e[i+2, i] = -self.tprime
         h1e[-2, -1] = h1e[-1, -2] = -1.
 
         # 2-body term
@@ -95,8 +99,8 @@ class spinless1d(object):
 
         if self.pbc:
             h1e[0, -1] = h1e[-1, 0] = -1.
-            h1e[0, -2] = h1e[-2, 0] = self.tprime
-            h2e[0, -1] = h2e[-1, 0] = self.V / 2.
+            h1e[0, -2] = h1e[-2, 0] = -self.tprime
+            h2e[0, 0, -1, -1] = h2e[-1, -1, 0, 0] = self.V / 2.
         h1e += np.diag(noise)
         return h1e, h2e
     
@@ -104,7 +108,7 @@ class spinless1d(object):
         h1e, h2e = self.gen_ham()
         return np.array([h1e, h1e*0]), np.array([h2e, h2e*0, h2e*0])
 
-    def run_scf(self, mf_tol=1e-10, mf_niter=100, T=0, Tmin=1e-2):
+    def run_scf(self, mf_tol=1e-10, mf_niter=200, T=0, Tmin=1e-2):
         """
         Generate the PySCF meanfield object.
         """
@@ -116,6 +120,7 @@ class spinless1d(object):
         h1e, eri = self.gen_ham()
         mol.build()
         mf = scf.UHF(mol)
+        mf.verbose = 3
         # add temperature 
         if T > Tmin:
             print("Running finite-temperature SCF!")

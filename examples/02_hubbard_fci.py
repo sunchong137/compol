@@ -25,7 +25,6 @@ h1_mo, h2_mo = helpers.rotate_ham(mymf)
 # FCI
 cisolver = fci.direct_uhf.FCI()
 e_fci, civec = cisolver.kernel(h1_mo, h2_mo, norb, (na, nb))
-print(e_fci)
 
 # compare to pyscf 
 n = norb

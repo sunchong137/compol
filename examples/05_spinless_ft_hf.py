@@ -17,5 +17,3 @@ nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
 sdet = mo_coeff[:, :nocc]
 z = slater_spinless.det_z_det(nsite, sdet, x0=0.0)
 print(z)
-
-
