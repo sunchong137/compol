@@ -30,7 +30,7 @@ def gen_cistr(norb, nelec):
     return civecs.gen_cistr(norb, nelec)
 
 
-def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
+def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_phase=False):
     '''
     Finite temperature complex polarization. 
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
@@ -51,11 +51,11 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
         return civecs.compol_fci_site(cis[:, 0], norb, nelec, x0=x0)
     
     # define complex polarization
-    Z = slater.gen_zmat_site(norb, x0)
+    zmat = slater.gen_zmat_site(norb, x0)
 
     # define site basis orbitals. 
     bra_mo = np.eye(norb)
-    ket_mo = np.dot(Z, bra_mo)
+    ket_mo = np.dot(zmat, bra_mo)
 
     bra_mo = np.array([bra_mo, bra_mo])
     ket_mo = np.array([ket_mo, ket_mo])
@@ -89,8 +89,13 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2):
     weights = np.exp(-energies/T)
     top = Z_vals.T @ cis**2 @ weights 
     bot = np.sum(weights)
-
-    return top/bot
+    Z = top/bot
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm
 
 
 def ftfci_canonical(h1e, eri, norb, nelec):
@@ -102,7 +107,7 @@ def ftfci_canonical(h1e, eri, norb, nelec):
     energies, civecs = np.linalg.eigh(H_fci) 
     return energies, civecs
 
-def fci_ham_pspace(h1e, eri, norb, nelec, max_np=1e4):
+def fci_ham_pspace(h1e, eri, norb, nelec, max_np=1e10):
     '''
     Construct the full Hamiltonian using the pspace method.
     maximum: 8 orbitals.

@@ -119,7 +119,7 @@ def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     return ovlp
 
 
-def det_z_det(L, sdet, x0=0.0, normalize=False):
+def det_z_det(L, sdet, x0=0.0, normalize=False, return_phase=False):
     '''
     Evaluate <det | Z | det> 
     Args:
@@ -134,4 +134,10 @@ def det_z_det(L, sdet, x0=0.0, normalize=False):
     Z = ovlp_det(sdet, sdet2) 
     if normalize:
         Z /= ovlp_det(sdet, sdet)
-    return Z
+        
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm

@@ -14,7 +14,8 @@
 
 
 import numpy as np
-from compol import civecs, hubbard
+from compol import civecs
+from compol.hamiltonians import hubbard
 from scipy.special import comb
 import time 
 

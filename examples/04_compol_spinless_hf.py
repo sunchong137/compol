@@ -4,7 +4,7 @@ from compol.hamiltonians import disorder_ham
 from compol.solvers import fci_uhf
 
 nsite = 50
-V = 1
+V = 0
 tprime = 1
 W = 4
 pbc = True

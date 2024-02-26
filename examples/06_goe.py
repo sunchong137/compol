@@ -6,7 +6,6 @@ from compol.solvers import fci_uhf
 nsite = 12
 W1 = 3
 W2 = 0
-pbc = False
 nelec = (nsite // 2, 0)
 obj = goe.spinless1d(nsite, W1, W2, 'gaussian')
 mf = obj.run_scf()

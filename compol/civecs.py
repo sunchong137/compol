@@ -50,7 +50,7 @@ def gen_cistr(norb, nelec):
     return bin_strs
 
 
-def compol_fci_site(ci, L, nelec, x0=0.0):
+def compol_fci_site(ci, L, nelec, x0=0.0, return_phase=False):
     '''
     In the site basis, the determinants are eigenvalues of Z, so we only need to evaluate
     < phi_i |Z| phi_i>, and the others are zero.
@@ -66,8 +66,8 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
         float
     '''
     # define complex polarization
-    Z = slater.gen_zmat_site(L, x0)
-    zvec = np.diag(Z)
+    zmat = slater.gen_zmat_site(L, x0)
+    zvec = np.diag(zmat)
 
     try:
         neleca = nelec[0] # nelec as tuple
@@ -81,7 +81,7 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
     ci_strs_dn = gen_cistr(L, ne[1])
 
     # choose the MOs
-    z_val = 0.j
+    Z = 0.j
     len_u, len_d = ci.shape
     for up in range(len_u):
         for dn in range(len_d):
@@ -91,12 +91,17 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
             idx_dn = np.nonzero(occ_d)[0]
             _z = np.prod(zvec[idx_up])*np.prod(zvec[idx_dn])
             coeff = ci[up, dn]*ci[up, dn].conj()
-            z_val += _z * coeff
+            Z += _z * coeff
 
-    return z_val #np.linalg.norm(z_val)
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm
 
 
-def compol_fci_prod(ci, norb, nelec, x0=0.):
+def compol_fci_prod(ci, norb, nelec, x0=0., return_phase=False):
     '''
     Compute complex polarization given a ci vector using the following formula:
     ...math:
@@ -126,10 +131,15 @@ def compol_fci_prod(ci, norb, nelec, x0=0.):
         new_vec += deltb
 
     Z = np.dot(ci_vec.ravel().conj(), new_vec.ravel()) 
-    return Z #np.linalg.norm(Z)
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm
 
 
-def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
+def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0, return_phase=False):
     '''
     Evaluate the complex polarization with respect
     to a CI vector. 
@@ -169,7 +179,7 @@ def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
 
 
     z_mo = slater.z_sdet(norb, mo_coeff, x0=x0)
-    z_val = 0.j
+    Z = 0.j
 
     ci_strs_up = gen_cistr(norb, ne[0])
     ci_strs_dn = gen_cistr(norb, ne[1])
@@ -186,13 +196,12 @@ def compol_fci_full(ci, norb, nelec, mo_coeff, x0=0.0):
                     ket = slater.gen_det(z_mo, [occ_upr, occ_dnr])
                     bra = slater.gen_det(mo_coeff, [occ_upl, occ_dnl])
                     coeff = ci[up_l, dn_l].conj() * ci[up_r, dn_r]
-                    z = slater.ovlp_det(bra, ket)
-                    # if up_r == up_l and dn_r == dn_l:
-                    #     # print(ket)
-                    #     # exit()
-                    #     print(up_r, dn_r, up_l, dn_l, z, coeff)
-                    # else:
-                    #     assert np.linalg.norm(z)<1e-10
-                    z_val +=  z * coeff 
+                    _z = slater.ovlp_det(bra, ket)
+                    Z +=  _z * coeff 
                                                   
-    return z_val #np.linalg.norm(z_val)
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm

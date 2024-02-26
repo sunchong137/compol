@@ -1,5 +1,6 @@
 import numpy as np
-from compol import ft_civecs, hubbard 
+from compol import ft_civecs
+from compol.hamiltonians import hubbard
 import scipy
 import time
 

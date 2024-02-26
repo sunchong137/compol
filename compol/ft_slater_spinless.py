@@ -35,7 +35,7 @@ def gen_zmat_site(L, x0):
 def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     return slater_spinless.ovlp_det(sdet1, sdet2, ao_ovlp=ao_ovlp)
 
-def det_z_det(L, fock, T, x0=0, Tmin=1e-2):
+def det_z_det(L, fock, T, x0=0, Tmin=1e-2, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
     Args:
@@ -51,7 +51,7 @@ def det_z_det(L, fock, T, x0=0, Tmin=1e-2):
     if T < Tmin:
         raise ValueError("Temperature value is too small!")
         # TODO return ground state value
-    Z = gen_zmat_site(L, x0) 
+    zmat = gen_zmat_site(L, x0) 
     rho = np.zeros((L*2, L*2)) 
     rho[:L, :L] = sla.expm(-1*fock/T)
     rho[L:, L:] = np.eye(L)
@@ -60,8 +60,12 @@ def det_z_det(L, fock, T, x0=0, Tmin=1e-2):
     C0[L:] = np.eye(L) 
     
     rho_c0 = rho @ C0 
-    top = C0.T @ Z @ rho_c0 
+    top = C0.T @ zmat @ rho_c0 
     bot = C0.T @ rho_c0  
-
-    z_val = top / bot 
-    return np.linalg.norm(z_val)
+    Z = top / bot 
+    z_norm = np.linalg.norm(Z) 
+    if return_phase:
+        z_phase = np.angle(Z) 
+        return z_norm, z_phase
+    else:
+        return z_norm

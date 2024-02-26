@@ -1,15 +1,15 @@
 import numpy as np 
 from compol import civecs_spinless, helpers
 from compol.hamiltonians import disorder_ham
-from compol.solvers import fci_uhf
+from compol.solvers import fci_uhf, exact_diag
 
 nsite = 12
-V = 0
+V = 1
 tprime = 0
-W = 7
+W = 10
 pbc = False
 nelec = (nsite // 2, 0)
-obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')
+obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'none')
 mf = obj.run_scf()
 h1e = mf.get_hcore()
 h2e = mf._eri
@@ -17,6 +17,25 @@ nelec = mf.nelec
 mo = mf.mo_coeff
 e_hf = mf.e_tot
 h1e_mo, h2e_mo = helpers.ao2mo_spinless(h1e, h2e, mo)
+h1e_uhf = np.array([h1e, h1e*0])
+h2e_uhf = np.array([h2e, h2e*0, h2e*0])
+# hfci = exact_diag.fci_ham_pspace(h1e_uhf, h2e_uhf, nsite, nelec)
+hfci = exact_diag.fci_ham_pspace(h1e_mo, h2e_mo, nsite, nelec)
+
+e, v = np.linalg.eigh(hfci)
+
+idx = len(e) // 2
+print(max(np.abs(v[:, idx])))
+# print(e)
+rdm1 = fci_uhf.make_rdm1(v[:, idx], nsite, nelec)
+s, _ = np.linalg.eigh(rdm1)
+print(s)
+exit()
+# for i in range(len(e)-1):
+#     if e[i+1] - e[i] < 1e-4:
+#         print(e[i+1], e[i])
+# # print(e)
+# exit()
 e, v = fci_uhf.kernel(h1e_mo, h2e_mo, nsite, nelec, target_e=-0.1)
 print("Energy: ", e)
 rdm1 = fci_uhf.make_rdm1(v, nsite, nelec)
