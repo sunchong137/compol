@@ -47,6 +47,43 @@ def rdm1_ft(mf):
     rdm1 = mo @ occ @ mo.T
     return rdm1
 
+# def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False):
+#     '''
+#     Finite temperature form of the complex polarization.
+#     Args:
+#         L (int) : length of the site.
+#         fock (array) : the finite T fock operator.
+#         T (float) : temperature.
+#     Kwargs:
+#         x0 (float) : original
+#         Tmin (float) : minimum non-zero temperature.
+#     Returns:
+#         float, the modulo of the complex polarization.
+#     '''
+#     if T < Tmin:
+#         print("WARNING: Falling back to ground state.")
+#         mo_coeff = mf.mo_coeff[0]
+#         nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
+#         sdet = mo_coeff[:, :nocc]
+#         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
+#     beta = 1/T
+#     zmat = gen_zmat_site(L, x0) 
+#     Imat = np.eye(L, dtype=np.complex128) 
+#     # get hamiltonian
+#     fock = mf.get_fock()[0]
+#     if mu is None:
+#         nelec = np.sum(mf.nelec) 
+#         mu = get_mu(fock, nelec, beta, mu0=0)
+#     mu_mat = np.eye(L) * mu
+#     hcore_beta = -beta * (fock - mu_mat)
+#     rho = sla.expm(hcore_beta) 
+#     top = np.linalg.slogdet(zmat @ rho + Imat)[1]
+#     bot = np.linalg.slogdet(rho + Imat)[1]
+#     log_z = top - bot
+#     Z = np.exp(log_z) 
+#     z_norm = np.linalg.norm(Z)
+#     return z_norm
+
 def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
