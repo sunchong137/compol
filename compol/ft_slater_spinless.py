@@ -24,6 +24,9 @@ from scipy.optimize import minimize
 Pi = np.pi
 
 def gen_zmat_site(L, x0):
+    return slater_spinless.gen_zmat_site()
+
+def gen_zmat_site_extend(L, x0):
     '''
     Generate the matrix for Z operator in the site basis for MO coeffs.
     '''
@@ -44,7 +47,8 @@ def rdm1_ft(mf):
     rdm1 = mo @ occ @ mo.T
     return rdm1
 
-def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=None, return_phase=False):
+def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False, 
+              max_iter=500):
     '''
     Finite temperature form of the complex polarization.
     Args:
@@ -64,31 +68,56 @@ def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=None, return_phase=False):
         sdet = mo_coeff[:, :nocc]
         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
     beta = 1/T
+    zmat = gen_zmat_site_extend(L, x0) 
+    # get hamiltonian
     fock = mf.get_fock()[0]
     if mu is None:
         nelec = np.sum(mf.nelec) 
         mu = get_mu(fock, nelec, beta, mu0=0)
     mu_mat = np.eye(L) * mu
-    zmat = gen_zmat_site(L, x0) 
-    rho = np.eye(L*2)
-    # rho[:L, :L] = rdm1_ft(mf) 
-    rho[:L, :L] = sla.expm(-beta * (fock-mu_mat))
-    C0 = np.zeros((2*L, L))
+    hcore = fock - mu_mat
+    ew, ev = np.linalg.eigh(hcore)
+    print(-beta * ew)
+    exit()
+
+    rho = np.eye(L*2, dtype=np.complex128) 
+    rho[:L, :L] = sla.expm(-beta * (fock - mu_mat)) 
+    x = np.max(rho)
+    rho /= x
+    # print(x)
+    # exit()
+    C0 = np.zeros((2*L, L), dtype=np.complex128)
     C0[:L] = np.eye(L)
     C0[L:] = np.eye(L)
 
     # rescale C0 for stability 
-    rho_c0 = rho @ C0 
-    top = np.linalg.det(C0.T @ zmat @ rho_c0) 
-    bot = np.linalg.det(C0.T @ rho_c0)
-    print(bot, top)
-    Z = top / bot 
-    z_norm = np.linalg.norm(Z) 
-    if return_phase:
-        z_phase = np.angle(Z) 
-        return z_norm, z_phase
+    fac = 0.2
+    step = 0.9
+    conv = False
+    for iter in range(max_iter):
+        rho_c0 = rho @ C0 
+        bot = np.linalg.det(C0.T @ rho_c0)
+        if bot > 1e30:
+            fac *= step
+        elif bot < 1e-30:
+            fac /= step
+        else:
+            conv = True
+            break
+        C0 *= fac 
+    if conv:
+        top = np.linalg.det(C0.T @ zmat @ rho_c0) 
+        Z = top / bot 
+        print(bot, top)
+        z_norm = np.linalg.norm(Z) 
+        if return_phase:
+            z_phase = np.angle(Z) 
+            return z_norm, z_phase
+        else:
+            return z_norm
     else:
-        return z_norm
+        raise ValueError("Warning: The complex polarization cannot be calculated!")
+
 
 
 def get_mu(h, nelec, beta, mu0=0):
