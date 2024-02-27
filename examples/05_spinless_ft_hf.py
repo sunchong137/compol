@@ -2,7 +2,7 @@ import numpy as np
 from compol import ft_slater_spinless
 from compol.hamiltonians import disorder_ham
 
-T = 0
+T = 10
 nsite = 6
 V = 1
 tprime = 1

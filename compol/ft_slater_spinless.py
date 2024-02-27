@@ -19,6 +19,7 @@ Evaluate complex polarization based on Slater determinants at finite temperature
 from compol import slater_spinless
 import numpy as np
 from scipy import linalg as sla
+from scipy.optimize import minimize
 
 Pi = np.pi
 
@@ -43,7 +44,7 @@ def rdm1_ft(mf):
     rdm1 = mo @ occ @ mo.T
     return rdm1
 
-def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=0, return_phase=False):
+def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=None, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
     Args:
@@ -64,6 +65,9 @@ def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=0, return_phase=False):
         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
     beta = 1/T
     fock = mf.get_fock()[0]
+    if mu is None:
+        nelec = np.sum(mf.nelec) 
+        mu = get_mu(fock, nelec, beta, mu0=0)
     mu_mat = np.eye(L) * mu
     zmat = gen_zmat_site(L, x0) 
     rho = np.eye(L*2)
@@ -87,9 +91,22 @@ def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=0, return_phase=False):
         return z_norm
 
 
-def get_mu(fock, elec):
+def get_mu(h, nelec, beta, mu0=0):
     '''
     Optimize the mu value with respect to a given electron number.
-
+    Args:
+        h (2d array) : one-body Hamiltonian
+        nelec (int) : target electron number 
+        beta (float) : 1/temperature
+    Kwargs:
+        mu0 (float) : initial guess of chemical potential
+    Returns:
+        float, optimized mu.
     '''
-    pass
+    ew, _ = np.linalg.eigh(h)
+    def fermi(mu):
+        return 1./(1.+np.exp(beta*(ew-mu)))
+    def func(mu):
+        return (nelec - np.sum(fermi(mu)))**2
+    mu = minimize(func, mu0, method="Powell").x[0]
+    return mu
