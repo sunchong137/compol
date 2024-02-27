@@ -47,8 +47,7 @@ def rdm1_ft(mf):
     rdm1 = mo @ occ @ mo.T
     return rdm1
 
-def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False, 
-              max_iter=500):
+def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
     Args:
@@ -83,18 +82,64 @@ def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False,
     s_top = np.prod(np.sign(e_top))
     s_bot = np.prod(np.sign(e_bot))
     sign = s_top * s_bot
-    # log_z = np.sum(np.log(e_top)) - np.sum(np.log(e_bot))
     log_z = np.sum(np.log(np.abs(e_top))) - np.sum(np.log(np.abs(e_bot)))
     Z = np.exp(log_z) * sign
-    # Z = np.prod(e_top/e_bot)
-    # sign_t = np.prod(np.sign(e_top))
-    # top = np.prod(e_top)
-    # bot = np.prod(e_bot)
-    
-    # # top = np.linalg.det(zmat @ rho + Imat)
-    # # bot = np.linalg.det(rho + Imat)
-    # Z = top / bot 
-    # print(bot, top)
+    z_norm = np.linalg.norm(Z)
+    return z_norm
+
+def det_z_det_iter(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False, 
+              max_iter=500):
+    '''
+    Finite temperature form of the complex polarization.
+    Args:
+        L (int) : length of the site.
+        fock (array) : the finite T fock operator.
+        T (float) : temperature.
+    Kwargs:
+        x0 (float) : original
+        Tmin (float) : minimum non-zero temperature.
+    Returns:
+        float, the modulo of the complex polarization.
+    Sometimes unstable, esp T < 0.5
+    '''
+    if T < Tmin:
+        print("WARNING: Falling back to ground state.")
+        mo_coeff = mf.mo_coeff[0]
+        nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
+        sdet = mo_coeff[:, :nocc]
+        return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
+    beta = 1/T
+    zmat = gen_zmat_site(L, x0) 
+    Imat = np.eye(L, dtype=np.complex128) 
+    # get hamiltonian
+    fock = mf.get_fock()[0]
+    if mu is None:
+        nelec = np.sum(mf.nelec) 
+        mu = get_mu(fock, nelec, beta, mu0=0)
+    mu_mat = np.eye(L) * mu
+    hcore_beta = -beta * (fock - mu_mat)
+    rho = sla.expm(hcore_beta) 
+
+    scale = 0.9 
+    fac = 1
+    mat = (rho + Imat)
+    for iter in range(max_iter):
+        _, e_bot, _ = np.linalg.svd(mat)
+        tmp = np.prod(e_bot)
+        if tmp > 1e40:
+            mat *= scale 
+            fac *= scale
+        elif tmp < 1e-40:
+            mat /= scale
+            fac /= scale
+        else:
+            break
+    _, e_top, _ = np.linalg.svd((zmat @ rho + Imat)*fac)
+    s_top = np.prod(np.sign(e_top))
+    s_bot = np.prod(np.sign(e_bot))
+    sign = s_top * s_bot
+    log_z = np.sum(np.log(np.abs(e_top))) - np.sum(np.log(np.abs(e_bot)))
+    Z = np.exp(log_z) * sign
     z_norm = np.linalg.norm(Z)
     return z_norm
 
