@@ -31,11 +31,19 @@ def gen_zmat_site(L, x0):
     Z[:L, :L] = np.diag(np.exp(2.j * Pi * pos / L))
     return Z 
 
-
 def ovlp_det(sdet1, sdet2, ao_ovlp=None):
     return slater_spinless.ovlp_det(sdet1, sdet2, ao_ovlp=ao_ovlp)
 
-def det_z_det(L, fock, T, x0=0, Tmin=1e-2, return_phase=False):
+def rdm1_ft(mf):
+    '''
+    Evaluate the rdm. 
+    '''
+    mo = mf.mo_coeff[0]
+    occ = mf.mo_occ[0] 
+    rdm1 = mo @ occ @ mo.T
+    return rdm1
+
+def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=0, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
     Args:
@@ -49,19 +57,27 @@ def det_z_det(L, fock, T, x0=0, Tmin=1e-2, return_phase=False):
         float, the modulo of the complex polarization.
     '''
     if T < Tmin:
-        raise ValueError("Temperature value is too small!")
-        # TODO return ground state value
+        print("WARNING: Falling back to ground state.")
+        mo_coeff = mf.mo_coeff[0]
+        nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
+        sdet = mo_coeff[:, :nocc]
+        return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
+    beta = 1/T
+    fock = mf.get_fock()[0]
+    mu_mat = np.eye(L) * mu
     zmat = gen_zmat_site(L, x0) 
-    rho = np.zeros((L*2, L*2)) 
-    rho[:L, :L] = sla.expm(-1*fock/T)
-    rho[L:, L:] = np.eye(L)
+    rho = np.eye(L*2)
+    # rho[:L, :L] = rdm1_ft(mf) 
+    rho[:L, :L] = sla.expm(-beta * (fock-mu_mat))
     C0 = np.zeros((2*L, L))
-    C0[:L] = np.eye(L) 
-    C0[L:] = np.eye(L) 
-    
+    C0[:L] = np.eye(L)
+    C0[L:] = np.eye(L)
+
+    # rescale C0 for stability 
     rho_c0 = rho @ C0 
-    top = C0.T @ zmat @ rho_c0 
-    bot = C0.T @ rho_c0  
+    top = np.linalg.det(C0.T @ zmat @ rho_c0) 
+    bot = np.linalg.det(C0.T @ rho_c0)
+    print(bot, top)
     Z = top / bot 
     z_norm = np.linalg.norm(Z) 
     if return_phase:
@@ -69,3 +85,11 @@ def det_z_det(L, fock, T, x0=0, Tmin=1e-2, return_phase=False):
         return z_norm, z_phase
     else:
         return z_norm
+
+
+def get_mu(fock, elec):
+    '''
+    Optimize the mu value with respect to a given electron number.
+
+    '''
+    pass
