@@ -268,15 +268,8 @@ def get_mu(h, nelec, beta, mu0=0):
     le = len(ew)
     def fermi(mu):
         fac = beta*(ew-mu)
-        ovfl = np.sum(fac > 700)
-        ind = (fac < 700) 
-        if ovfl > 0:
-            print("Warning: Overflow exists!")
-            f = np.zeros(le)
-            ind = (fac < 700) 
-            f[ind] = 1./(1.+np.exp(beta*(ew[ind]-mu)))
-        else:
-            f = 1./(1.+np.exp(beta*(ew-mu)))
+        f = np.zeros(le) 
+        f[fac < 40] = 1./(1.+np.exp(beta*(ew[fac<40]-mu))) # avoid overflow
         return f
     def func(mu):
         return (nelec - np.sum(fermi(mu)))**2
