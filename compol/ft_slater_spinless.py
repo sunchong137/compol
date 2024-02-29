@@ -103,7 +103,10 @@ def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False):
         nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
         sdet = mo_coeff[:, :nocc]
         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
-    beta = 1/T
+    if T > 1e100:
+        beta = 0.0
+    else:
+        beta = 1./T
     zmat = gen_zmat_site(L, x0) 
     Imat = np.eye(L, dtype=np.complex128) 
     # get hamiltonian
@@ -145,7 +148,10 @@ def det_z_det_iter(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False,
         nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
         sdet = mo_coeff[:, :nocc]
         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
-    beta = 1/T
+    if T > 1e100:
+        beta = 0
+    else:
+        beta = 1./T
     zmat = gen_zmat_site(L, x0) 
     Imat = np.eye(L, dtype=np.complex128) 
     # get hamiltonian
@@ -201,7 +207,10 @@ def det_z_det_old(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False,
         nocc = int(np.sum(mf.mo_occ[0]) + 1e-10)
         sdet = mo_coeff[:, :nocc]
         return slater_spinless.det_z_det(L, sdet, x0=x0, return_phase=return_phase)
-    beta = 1/T
+    if T > 1e100:
+        beta = 0.0
+    else:
+        beta = 1/T
     zmat = gen_zmat_site_extend(L, x0) 
     Imat = np.eye(L)
     # get hamiltonian
