@@ -28,7 +28,7 @@ class spinless1d(object):
     FCI can take 18 sites, maybe more. 
     '''
     def __init__(self, nsite, V, W=1, tprime=0, pbc=False, distrib="box", 
-                 nelec=None, filling=0.5):
+                 nelec=None, filling=0.5, t=1):
         '''
         Initializes the Spinless1D class.
         Args:
@@ -49,6 +49,7 @@ class spinless1d(object):
         self.tprime = tprime
         self.pbc = pbc 
         self.distrib = distrib
+        self.t = t
         if nelec is None:
             nelec = int(nsite * filling + 1e-6) 
             f = nelec/nsite
@@ -89,16 +90,16 @@ class spinless1d(object):
 
         # 1-body term
         for i in range(self.nsite - 2):
-            h1e[i, i+1] = h1e[i+1, i] = -1.
+            h1e[i, i+1] = h1e[i+1, i] = -self.t
             h1e[i, i+2] = h1e[i+2, i] = -self.tprime
-        h1e[-2, -1] = h1e[-1, -2] = -1.
+        h1e[-2, -1] = h1e[-1, -2] = -self.t
 
         # 2-body term
         for i in range(self.nsite - 1):
             h2e[i, i, i+1, i+1] = h2e[i+1, i+1, i, i] = self.V / 2.  # making h2e symmetric
 
         if self.pbc:
-            h1e[0, -1] = h1e[-1, 0] = -1.
+            h1e[0, -1] = h1e[-1, 0] = -self.t
             h1e[0, -2] = h1e[-2, 0] = -self.tprime
             h2e[0, 0, -1, -1] = h2e[-1, -1, 0, 0] = self.V / 2.
         h1e += np.diag(noise)
@@ -124,8 +125,8 @@ class spinless1d(object):
         # add temperature 
         if T > Tmin:
             print("Running finite-temperature SCF!")
-            beta = 1/T 
-            mf = smearing_(mf, beta, 'fermi', fix_spin=False)
+            beta = 1./T 
+            mf = smearing_(mf, beta, 'fermi', fix_spin=True)
         mf.get_hcore = lambda *args: h1e
         mf.get_ovlp = lambda *args: np.eye(self.nsite)
         mf._eri = ao2mo.restore(1, eri, self.nsite)
