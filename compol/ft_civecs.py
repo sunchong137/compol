@@ -30,6 +30,7 @@ def gen_cistr(norb, nelec):
     return civecs.gen_cistr(norb, nelec)
 
 
+# def z_site_ftfci(norb, nelec, T, civecs, energies, )
 def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_phase=False):
     '''
     Finite temperature complex polarization. 
@@ -48,7 +49,7 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_p
         float.
     '''
     if T < ttol:
-        return civecs.compol_fci_site(cis[:, 0], norb, nelec, x0=x0)
+        return civecs.compol_fci_site(cis[:, 0][:, None], norb, nelec, x0=x0)
     
     # define complex polarization
     zmat = slater.gen_zmat_site(norb, x0)

@@ -2,11 +2,11 @@ import numpy as np
 from compol import ft_slater_spinless
 from compol.hamiltonians import disorder_ham
 
-T = 0.2
-nsite = 30
+T = 0.5
+nsite = 10
 V = 1
-tprime = 1
-W = 10
+tprime = 0
+W = 1
 pbc = True
 nelec = (nsite // 2, 0)
 obj = disorder_ham.spinless1d(nsite, V, W, tprime, pbc, 'box')

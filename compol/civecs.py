@@ -79,7 +79,6 @@ def compol_fci_site(ci, L, nelec, x0=0.0, return_phase=False):
 
     ci_strs_up = gen_cistr(L, ne[0])
     ci_strs_dn = gen_cistr(L, ne[1])
-
     # choose the MOs
     Z = 0.j
     len_u, len_d = ci.shape
