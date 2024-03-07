@@ -34,8 +34,9 @@ def compol_fci_site(ci, L, nelec, x0=0.0):
     Returns
         float, the norm of the complex polarization.
     '''
-    if not isinstance(nelec, (int, np.integer)):
-        nelec = nelec[0] + nelec[1]
+    nelec = np.sum(nelec)
+    # if not isinstance(nelec, (int, np.integer)):
+    #     nelec = nelec[0] + nelec[1]
     # define complex polarization
     Z = slater_spinless.gen_zmat_site(L, x0)
     ci = ci.ravel()
