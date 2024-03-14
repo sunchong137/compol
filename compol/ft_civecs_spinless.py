@@ -47,6 +47,7 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_p
     '''
 
     if T < ttol:
+        print("Temperature too low, falling back to ground state!")
         return civecs_spinless.compol_fci_site(cis[:, 0][:, None], norb, nelec, x0=x0)
     
     # define complex polarization
@@ -73,8 +74,15 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_p
 
     # Z_vals = Z_vals.ravel()
     # canonical ensemble
+    # test overflow
+    eT = -energies/T
+    max_e = np.max(eT) 
+    print(max_e)
+    if max_e > 100: # overflow 
+        print("Rescaling to prevent overflow.")
+        eT -= (max_e / 2)
 
-    weights = np.exp(-energies/T)
+    weights = np.exp(eT)
     top = Z_vals.T @ cis**2 @ weights
     # top = np.sum(Z_vals.T * cis**2 * weights) #Z_vals.T @ cis**2 @ weights 
     bot = np.sum(weights) 

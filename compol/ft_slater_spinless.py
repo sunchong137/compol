@@ -84,7 +84,7 @@ def rdm1_ft(mf):
 #     z_norm = np.linalg.norm(Z)
 #     return z_norm
 
-def det_z_det(L, mf, T, x0=0, Tmin=2e-1, mu=None, return_phase=False):
+def det_z_det(L, mf, T, x0=0, Tmin=1e-2, mu=None, return_phase=False):
     '''
     Finite temperature form of the complex polarization.
     Args:
