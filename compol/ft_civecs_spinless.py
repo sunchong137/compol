@@ -77,9 +77,9 @@ def ftcompol_fci_site(norb, nelec, T, energies, cis, x0=0.0, ttol=1e-2, return_p
     # test overflow
     eT = -energies/T
     max_e = np.max(eT) 
-    if max_e > 100: # overflow 
+    if max_e > 200: # overflow 
         print("Rescaling to prevent overflow.")
-        eT -= (max_e / 2)
+        eT -= (max_e - 200)
 
     weights = np.exp(eT)
     top = Z_vals.T @ cis**2 @ weights
