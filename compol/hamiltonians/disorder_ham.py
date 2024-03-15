@@ -28,7 +28,7 @@ class spinless1d(object):
     FCI can take 18 sites, maybe more. 
     '''
     def __init__(self, nsite, V, W=1.0, tprime=0.0, pbc=False, distrib="box", 
-                 nelec=None, filling=0.5, t=1.0):
+                 nelec=None, filling=0.5, t=1.0, silent=False):
         '''
         Initializes the Spinless1D class.
         Args:
@@ -56,7 +56,8 @@ class spinless1d(object):
             if abs(filling - nelec/nsite) > 1e-15:
                 logging.warning("Changing filling from {:0.2f} to {:0.2f} to keep integer electron count!".format(filling, f))
         self.nelec = nelec
-        self.print_info()
+        if not silent:
+            self.print_info()
 
     def print_info(self):
         header = "1D spinless Hamiltonian with diagonal disorder."
